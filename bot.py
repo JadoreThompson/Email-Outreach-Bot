@@ -1,3 +1,5 @@
+import pickle
+
 import os
 from dotenv import load_dotenv
 
@@ -20,6 +22,9 @@ from typing import List, Optional
 
 import time
 
+from datetime import timedelta, datetime
+
+
 load_dotenv('.env')
 api_key = os.getenv('API_KEY')
 url = "https://places.googleapis.com/v1/places:searchText"
@@ -32,11 +37,11 @@ email_sender =os.getenv('EMAIL_SENDER')
 email_password = os.getenv('EMAIL_PASSWORD')
 
 
-async def get_companies(next_page_token):
+async def get_companies(next_page_token, industry):
     global payload
 
     payload = {
-        'textQuery': 'Restaurants',
+        'textQuery': industry,
         'locationBias': {
             'circle': {
                 'center': {'latitude': 51.5964, 'longitude': 0.0349},
@@ -59,7 +64,20 @@ async def get_companies(next_page_token):
 
 
 async def get_emails(companies):
+    def save_cache(email, company):
+        with open(f"{company['displayName']['text']}.pkl", 'wb') as f:
+            pickle.dump({'timestamp': datetime.now(), 'data': email}, f)
+
+
+    def load_cache(company):
+        if os.path.exists(f"{company['displayName']['text']}.pkl"):
+            return True
+
+
     for company in companies['places']:
+        if load_cache:
+            continue
+
         try:
             rsp = requests.get(company['websiteUri'])
             if rsp.status_code == 200:
@@ -72,6 +90,7 @@ async def get_emails(companies):
                 emails = list(set(email for email in emails if any(domain in email for domain in email_domains)))
                 if emails:
                     for email in emails:
+                        save_cache(email, company)
                         yield email
                 else:
                     print(f"No emails found for '{company}'")
@@ -106,7 +125,8 @@ async def send_emails(host_email, recipient_email):
             server.login(host_email, email_password)
             server.sendmail(host_email, email.email_recipient, em.as_string())
 
-        time.sleep(300)
+        await asyncio.sleep(300)
+
         print("Email sent successfully")
         return True
 
@@ -115,30 +135,50 @@ async def send_emails(host_email, recipient_email):
         return False
 
 
-
-
 async def main():
-    next_page_token = None
-    while True:
-        companies = await get_companies(next_page_token)
-        if 'places' not in companies:
-            print("No more pages to fetch")
-            break
+    industries = [
+        'restaurants',
+        'cafes',
+        'bakeries',
+        'private dentists',
+        'beauty salons'
+        'car dealerships',
+        'real estate agencies',
+    ]
 
-        async for email in get_emails(companies):
-            outcome = await send_emails(email_sender, email)
-            if outcome:
-                print("Successful send")
-            else:
-                print("Failed to send")
+    for industry in industries:
+        print(f"Scraping emails for '{industry}'...")
+        next_page_token = None
+        while True:
+            companies = await get_companies(next_page_token, industry)
+            if 'places' not in companies:
+                print("No more pages to fetch")
+                break
 
-        if 'nextPageToken' not in companies:
-            print("No more pages to fetch.")
-            break
+            async for email in get_emails(companies):
+                outcome = await send_emails(email_sender, email)
+                if outcome:
+                    print("Successful send")
+                else:
+                    print("Failed to send")
 
-        next_page_token = companies['nextPageToken']
-        print("Sleeping for 5 minutes...")
+            if 'nextPageToken' not in companies:
+                print("No more pages to fetch.")
+                break
+
+            next_page_token = companies['nextPageToken']
+            print("Sleeping for 5 minutes...")
 
 
 if __name__ == '__main__':
     asyncio.run(main())
+    # async def main():
+    #     next_page_token = None
+    #     companies = await get_companies(next_page_token, 'barber')
+    #     first_place = companies['places'][0]['displayName']['text']
+    #
+    #     print(json.dumps(first_place, indent=4))
+    #
+    # asyncio.run(main())
+
+
