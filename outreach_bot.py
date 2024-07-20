@@ -24,17 +24,25 @@ import time
 
 from datetime import timedelta, datetime
 
+from telegram_bot import notify_tele
+
 
 load_dotenv('.env')
-api_key = os.getenv('API_KEY')
+
+places_api_key = os.getenv('PLACES_API_KEY')
 url = "https://places.googleapis.com/v1/places:searchText"
 header = {
-    'X-Goog-Api-Key': api_key,
+    'X-Goog-Api-Key': places_api_key,
     'X-Goog-FieldMask': 'places.displayName,places.name,places.id,places.websiteUri,places.nationalPhoneNumber,places.rating,nextPageToken',
     'Content-Type': 'application/json'
 }
+
 email_sender = os.getenv('EMAIL_SENDER')
 email_password = os.getenv('EMAIL_PASSWORD')
+
+tele_link = "https://t.me/nexifysolutions_bot"
+tele_api_key = os.getenv('TELE_API_KEY')
+base_url = f"https://api.telegram.org/bot{tele_api_key}/"
 
 
 def get_companies(industry, next_page_token=None):
@@ -51,8 +59,6 @@ def get_companies(industry, next_page_token=None):
 
     if next_page_token:
         payload['pageToken'] = next_page_token
-        rsp = requests.post(url, headers=header, json=payload)
-        return rsp.json()
 
     rsp = requests.post(url, headers=header, json=payload)
     return rsp.json()
@@ -60,7 +66,7 @@ def get_companies(industry, next_page_token=None):
 
 def get_company_details(company):
     cache_file = f"{company['displayName']['text']}.pkl"
-    cache_expiry = 720
+    cache_expiry = timedelta(hours=720)
 
     def save_cache(email):
         with open(cache_file, 'wb') as f:
@@ -74,20 +80,23 @@ def get_company_details(company):
                 return True
         return False
 
+    def check_phone_and_website():
+        number = company.get('nationalPhoneNumber')
+        website = company.get('websiteUri')
+
+        if website:
+            return True
+
+        if website is None:
+            if number:
+                notify_tele(company['displayName']['text'], number)
+
+        return False
+
     if load_cache():
         return False
 
-    if 'websiteUri' not in company:
-        print(f"No website for '{company['displayName']['text']}'.")
-        return False
-    if 'nationalPhoneNumber' not in company:
-        print(f"No phone number for '{company['displayName']['text']}'.")
-        return False
-    print(f"Call {company}, they have no site!")
-    url = company['websiteUri']
-    if not url:
-        print(f"No website for '{company}'.")
-        return False
+    check_phone_and_website()
 
     try:
         rsp = requests.get(url)
@@ -149,7 +158,7 @@ def main():
             for company in companies['places']:
                 for email in get_company_details(company):
                     send_email(email)
-                    time.sleep(300)
+                    time.sleep(10)
 
             # after it's all done then check if we can go next page
             if 'nextPageToken' not in companies:
