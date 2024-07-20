@@ -33,7 +33,7 @@ header = {
     'X-Goog-FieldMask': 'places.displayName,places.name,places.id,places.websiteUri,places.nationalPhoneNumber,places.rating,nextPageToken',
     'Content-Type': 'application/json'
 }
-email_sender =os.getenv('EMAIL_SENDER')
+email_sender = os.getenv('EMAIL_SENDER')
 email_password = os.getenv('EMAIL_PASSWORD')
 
 
@@ -59,6 +59,24 @@ def get_companies(industry, next_page_token=None):
 
 
 def get_company_details(company):
+    cache_file = f"{company['displayName']['text']}.pkl"
+    cache_expiry = 720
+
+    def save_cache(email):
+        with open(cache_file, 'wb') as f:
+            pickle.dump({'timestamp': datetime.now(), 'data': email}, f)
+
+    def load_cache():
+        if os.path.exists(cache_file):
+            with open(cache_file, 'rb') as f:
+                cache = pickle.load(f)
+            if datetime.now() - cache['timestamp'] < cache_expiry:
+                return True
+        return False
+
+    if load_cache():
+        return False
+
     if 'websiteUri' not in company:
         print(f"No website for '{company['displayName']['text']}'.")
         return False
@@ -83,6 +101,7 @@ def get_company_details(company):
             emails = list(set(email for email in emails if any(domain in email for domain in email_domains)))
             if emails:
                 for email in emails:
+                    save_cache(email)
                     yield email
 
             print(json.dumps(company, indent=4))
