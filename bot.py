@@ -37,9 +37,7 @@ email_sender =os.getenv('EMAIL_SENDER')
 email_password = os.getenv('EMAIL_PASSWORD')
 
 
-async def get_companies(next_page_token, industry):
-    global payload
-
+def get_companies(industry, next_page_token=None):
     payload = {
         'textQuery': industry,
         'locationBias': {
@@ -53,132 +51,97 @@ async def get_companies(next_page_token, industry):
 
     if next_page_token:
         payload['pageToken'] = next_page_token
-        rsp = requests.post(url, headers=header, data=json.dumps(payload))
-        print(json.dumps(rsp.json(), indent=4))
+        rsp = requests.post(url, headers=header, json=payload)
         return rsp.json()
 
-    else:
-        rsp = requests.post(url, headers=header, data=json.dumps(payload))
-        print(json.dumps(rsp.json(), indent=4))
-        return rsp.json()
+    rsp = requests.post(url, headers=header, json=payload)
+    return rsp.json()
 
 
-async def get_emails(companies):
-    def save_cache(email, company):
-        with open(f"{company['displayName']['text']}.pkl", 'wb') as f:
-            pickle.dump({'timestamp': datetime.now(), 'data': email}, f)
-
-
-    def load_cache(company):
-        if os.path.exists(f"{company['displayName']['text']}.pkl"):
-            return True
-
-
-    for company in companies['places']:
-        if load_cache:
-            continue
-
-        try:
-            rsp = requests.get(company['websiteUri'])
-            if rsp.status_code == 200:
-                text = rsp.text
-
-                email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
-                emails = re.findall(email_pattern, text)
-                email_domains = ['.co.uk', '.com']
-
-                emails = list(set(email for email in emails if any(domain in email for domain in email_domains)))
-                if emails:
-                    for email in emails:
-                        save_cache(email, company)
-                        yield email
-                else:
-                    print(f"No emails found for '{company}'")
-                    continue
-
-            else:
-                print(f"Error fetching site for '{company}'")
-                continue
-        except Exception as e:
-            print(f"Error fetching emails for '{company}': {str(e)}")
-
-
-async def send_emails(host_email, recipient_email):
-    email = Email(
-        email_sender=os.getenv('EMAIL_SENDER'),
-        email_password=os.getenv('EMAIL_PASSWORD'),
-        email_recipient=recipient_email,
-        body='Sorry wrong email address',
-        subject='Accident'
-    )
+def get_company_details(company):
+    if 'websiteUri' not in company:
+        print(f"No website for '{company['displayName']['text']}'.")
+        return False
+    if 'nationalPhoneNumber' not in company:
+        print(f"No phone number for '{company['displayName']['text']}'.")
+        return False
+    print(f"Call {company}, they have no site!")
+    url = company['websiteUri']
+    if not url:
+        print(f"No website for '{company}'.")
+        return False
 
     try:
+        rsp = requests.get(url)
+        if rsp.status_code == 200:
+            company_html = rsp.text
+
+            email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+            emails = re.findall(email_pattern, company_html)
+            email_domains = ['.co.uk', '.com']
+
+            emails = list(set(email for email in emails if any(domain in email for domain in email_domains)))
+            if emails:
+                for email in emails:
+                    yield email
+
+            print(json.dumps(company, indent=4))
+
+    except Exception as e:
+        print(f"Failed to fetch details for '{company['displayName']['text']}': {str(e)}")
+        return False
+
+
+def send_email(recipient):
+    try:
         em = EmailMessage()
-        em['From'] = host_email
-        em['To'] = email.email_recipient
-        em['Subject'] = email.subject
-        em.set_content(email.body)
+        em['From'] = email_sender
+        em['To'] = recipient
+        em['Subject'] = 'sorry'
+        em.set_content('***')
 
         context = ssl.create_default_context()
 
         with smtplib.SMTP_SSL('smtp.gmail.com', 465, context=context) as server:
-            server.login(host_email, email_password)
-            server.sendmail(host_email, email.email_recipient, em.as_string())
-
-        await asyncio.sleep(300)
+            server.login(email_sender, email_password)
+            server.sendmail(email_sender, recipient, em.as_string())
 
         print("Email sent successfully")
         return True
-
     except Exception as e:
         print(f"Failed to send email: {str(e)}")
         return False
 
 
-async def main():
+def main():
     industries = [
         'restaurants',
-        'cafes',
-        'bakeries',
-        'private dentists',
-        'beauty salons'
-        'car dealerships',
-        'real estate agencies',
+        'barbers',
+        'cafes'
     ]
 
     for industry in industries:
-        print(f"Scraping emails for '{industry}'...")
         next_page_token = None
         while True:
-            companies = await get_companies(next_page_token, industry)
-            if 'places' not in companies:
-                print("No more pages to fetch")
+            companies = get_companies(industry, next_page_token)
+            if not companies or 'places' not in companies:
+                print('Nothing to scrape')
                 break
+            for company in companies['places']:
+                for email in get_company_details(company):
+                    send_email(email)
+                    time.sleep(300)
 
-            async for email in get_emails(companies):
-                outcome = await send_emails(email_sender, email)
-                if outcome:
-                    print("Successful send")
-                else:
-                    print("Failed to send")
-
+            # after it's all done then check if we can go next page
             if 'nextPageToken' not in companies:
-                print("No more pages to fetch.")
+                print('No nextPageToken')
                 break
 
             next_page_token = companies['nextPageToken']
-            print("Sleeping for 5 minutes...")
+            time.sleep(10)
+
+    print('Scraping completed')
 
 
 if __name__ == '__main__':
-    asyncio.run(main())
-    # async def main():
-    #     next_page_token = None
-    #     companies = await get_companies(next_page_token, 'barber')
-    #     first_place = companies['places'][0]['displayName']['text']
-    #
-    #     print(json.dumps(first_place, indent=4))
-    #
-    # asyncio.run(main())
-
-
+    main()
