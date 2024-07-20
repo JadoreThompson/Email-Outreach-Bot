@@ -24,8 +24,7 @@ import time
 
 from datetime import timedelta, datetime
 
-from telegram_bot import notify_tele
-
+from telegram_bot import notify_tele_phone_numbers, notify_tele_complete
 
 load_dotenv('.env')
 
@@ -89,7 +88,7 @@ def get_company_details(company):
 
         if website is None:
             if number:
-                notify_tele(company['displayName']['text'], number)
+                notify_tele_phone_numbers(company['displayName']['text'], number)
 
         return False
 
@@ -142,12 +141,13 @@ def send_email(recipient):
 
 
 def main():
-    industries = [
-        'restaurants',
-        'barbers',
-        'cafes'
-    ]
+    # industries = [
+    #     'restaurants',
+    #     'barbers',
+    #     'cafes'
+    # ]
 
+    industries = ['planes']
     for industry in industries:
         next_page_token = None
         while True:
@@ -168,7 +168,7 @@ def main():
             next_page_token = companies['nextPageToken']
             time.sleep(10)
 
-    print('Scraping completed')
+    notify_tele_complete('Scraping completed')
 
 
 if __name__ == '__main__':
