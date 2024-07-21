@@ -1,30 +1,26 @@
+import asyncio
 import pickle
 
 import os
+
+import aiohttp
+import aiosmtplib
 from dotenv import load_dotenv
 
 import json
-
 import requests
-import aiohttp
-from bs4 import BeautifulSoup
 
 import re
-
-import asyncio
 
 import smtplib
 from email.message import EmailMessage
 import ssl
 
-from models import Email
-from typing import List, Optional
-
 import time
-
 from datetime import timedelta, datetime
 
 from telegram_bot import notify_tele_phone_numbers, notify_tele_complete
+
 
 load_dotenv('.env')
 
@@ -63,13 +59,17 @@ def get_companies(industry, next_page_token=None):
     return rsp.json()
 
 
-def get_company_details(company):
-    cache_file = f"{company['displayName']['text']}.pkl"
-    cache_expiry = timedelta(hours=720)
-
-    def save_cache(email):
+async def save_cache(email, cache_file):
+    def _save():
         with open(cache_file, 'wb') as f:
             pickle.dump({'timestamp': datetime.now(), 'data': email}, f)
+
+    await asyncio.to_thread(_save)
+
+
+async def get_company_details(session, company):
+    cache_file = f"{company['displayName']['text']}.pkl"
+    cache_expiry = timedelta(hours=720)
 
     def load_cache():
         if os.path.exists(cache_file):
@@ -92,34 +92,31 @@ def get_company_details(company):
 
         return False
 
-    if load_cache():
-        return False
+    cache = load_cache()
+    if cache:
+        return
 
     check_phone_and_website()
 
     try:
-        rsp = requests.get(url)
-        if rsp.status_code == 200:
-            company_html = rsp.text
+        async with session.get(company['websiteUri']) as rsp:
+            if rsp.status == 200:
+                company_html = await rsp.text()
 
-            email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
-            emails = re.findall(email_pattern, company_html)
-            email_domains = ['.co.uk', '.com']
+                email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+                emails = re.findall(email_pattern, company_html)
+                email_domains = ['.co.uk', '.com']
 
-            emails = list(set(email for email in emails if any(domain in email for domain in email_domains)))
-            if emails:
-                for email in emails:
-                    save_cache(email)
-                    yield email
-
-            print(json.dumps(company, indent=4))
-
+                emails = list(set(email for email in emails if any(domain in email for domain in email_domains)))
+                if emails:
+                    for email in emails:
+                        await save_cache(email, cache_file)
+                        yield email
     except Exception as e:
         print(f"Failed to fetch details for '{company['displayName']['text']}': {str(e)}")
-        return False
 
 
-def send_email(recipient):
+async def send_email(recipient):
     try:
         em = EmailMessage()
         em['From'] = email_sender
@@ -127,11 +124,7 @@ def send_email(recipient):
         em['Subject'] = 'sorry'
         em.set_content('***')
 
-        context = ssl.create_default_context()
-
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465, context=context) as server:
-            server.login(email_sender, email_password)
-            server.sendmail(email_sender, recipient, em.as_string())
+        await aiosmtplib.send(em, hostname='smtp.gmail.com', username=email_sender, password=email_password, port=465, use_tls=True)
 
         print("Email sent successfully")
         return True
@@ -140,36 +133,35 @@ def send_email(recipient):
         return False
 
 
-def main():
-    # industries = [
-    #     'restaurants',
-    #     'barbers',
-    #     'cafes'
-    # ]
+async def outreach_to_company(session, company):
+    async for email in get_company_details(session, company):
+        await send_email(email)
+        await asyncio.sleep(10)
 
-    industries = ['planes']
-    for industry in industries:
-        next_page_token = None
-        while True:
-            companies = get_companies(industry, next_page_token)
-            if not companies or 'places' not in companies:
-                print('Nothing to scrape')
-                break
-            for company in companies['places']:
-                for email in get_company_details(company):
-                    send_email(email)
-                    time.sleep(10)
 
-            # after it's all done then check if we can go next page
-            if 'nextPageToken' not in companies:
-                print('No nextPageToken')
-                break
+async def main():
+    industries = ['restaurants', 'barbers', 'cafes', 'gyms']
 
-            next_page_token = companies['nextPageToken']
-            time.sleep(10)
+    async with aiohttp.ClientSession() as session:
+        for industry in industries:
+            next_page_token = None
+            while True:
+                companies = get_companies(industry, next_page_token)
+                if not companies or 'places' not in companies:
+                    print('Nothing to scrape')
+                    break
 
-    notify_tele_complete('Scraping completed')
+                tasks = [outreach_to_company(session, company) for company in companies['places']]
+                print(tasks)
+                await asyncio.gather(*tasks)
+
+                if 'nextPageToken' not in companies:
+                    print('No nextPageToken')
+                    break
+
+                next_page_token = companies['nextPageToken']
+                await asyncio.sleep(10)
 
 
 if __name__ == '__main__':
-    main()
+    asyncio.run(main())
