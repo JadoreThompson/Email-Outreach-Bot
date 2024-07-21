@@ -39,6 +39,9 @@ tele_link = "https://t.me/nexifysolutions_bot"
 tele_api_key = os.getenv('TELE_API_KEY')
 base_url = f"https://api.telegram.org/bot{tele_api_key}/"
 
+CACHE_DIR = './cache_collection'
+os.makedirs(CACHE_DIR, exist_ok=True)
+
 
 def get_companies(industry, next_page_token=None):
     payload = {
@@ -59,25 +62,23 @@ def get_companies(industry, next_page_token=None):
     return rsp.json()
 
 
-async def save_cache(email, cache_file):
-    def _save():
-        with open(cache_file, 'wb') as f:
-            pickle.dump({'timestamp': datetime.now(), 'data': email}, f)
+def save_cache(email, cache_file):
+    with open(cache_file, 'wb') as f:
+        pickle.dump({'timestamp': datetime.now(), 'data': email}, f)
 
-    await asyncio.to_thread(_save)
+
+def load_cache(cache_expiry, cache_file):
+    if os.path.exists(cache_file):
+        with open(cache_file, 'rb') as f:
+            cache = pickle.load(f)
+        if datetime.now() - cache['timestamp'] < cache_expiry:
+            return True
+    return False
 
 
 async def get_company_details(session, company):
-    cache_file = f"{company['displayName']['text']}.pkl"
+    cache_file = os.path.join(CACHE_DIR, f"{company['displayName']['text']}.pkl")
     cache_expiry = timedelta(hours=720)
-
-    def load_cache():
-        if os.path.exists(cache_file):
-            with open(cache_file, 'rb') as f:
-                cache = pickle.load(f)
-            if datetime.now() - cache['timestamp'] < cache_expiry:
-                return True
-        return False
 
     def check_phone_and_website():
         number = company.get('nationalPhoneNumber')
@@ -88,11 +89,11 @@ async def get_company_details(session, company):
 
         if website is None:
             if number:
-                notify_tele_phone_numbers(company['displayName']['text'], number)
+                asyncio.create_task(notify_tele_phone_numbers(company['displayName']['text'], number, session))
 
         return False
 
-    cache = load_cache()
+    cache = load_cache(cache_expiry, cache_file)
     if cache:
         return
 
@@ -110,8 +111,9 @@ async def get_company_details(session, company):
                 emails = list(set(email for email in emails if any(domain in email for domain in email_domains)))
                 if emails:
                     for email in emails:
-                        await save_cache(email, cache_file)
+                        save_cache(email, cache_file)
                         yield email
+
     except Exception as e:
         print(f"Failed to fetch details for '{company['displayName']['text']}': {str(e)}")
 
@@ -161,6 +163,8 @@ async def main():
 
                 next_page_token = companies['nextPageToken']
                 await asyncio.sleep(10)
+
+        await notify_tele_complete(session)
 
 
 if __name__ == '__main__':
