@@ -35,7 +35,6 @@ header = {
 email_sender = os.getenv('EMAIL_SENDER')
 email_password = os.getenv('EMAIL_PASSWORD')
 
-tele_link = "https://t.me/nexifysolutions_bot"
 tele_api_key = os.getenv('TELE_API_KEY')
 base_url = f"https://api.telegram.org/bot{tele_api_key}/"
 
