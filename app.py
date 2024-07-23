@@ -3,6 +3,7 @@ from views import views
 
 
 app = Flask(__name__)
+app.secret_key = "chicken"
 app.register_blueprint(views)
 
 

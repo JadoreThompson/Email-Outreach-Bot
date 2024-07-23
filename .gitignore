@@ -1,5 +1,7 @@
-**.env
-**.pkl
 venv
 .venv
 cache_collection
+client_secret_84706046961-bh1h1atvjaim09r3qh1ta1c2v3tefk92.apps.googleusercontent.com.json
+
+**.env
+**.pkl

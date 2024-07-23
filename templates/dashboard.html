@@ -28,6 +28,16 @@
 </header>
 
 <style>
+    table {
+        font-size: 1.2rem;
+    }
+
+    @media (max-width: 500px) {
+        table {
+            font-size: 1rem;
+        }
+    }
+
     .table {
         margin-top: 1rem;
     }
@@ -44,98 +54,113 @@
     .email-pair {
         margin-top: 1rem;
     }
+
+    th {
+        font-weight: 600;
+        white-space: nowrap;
+        margin-left: 1rem;
+    }
 </style>
 <main role="main">
+    <!-- Add email btn -->
     <div class="container email-pair">
         <button class="btn btn-primary" onclick="emailPair()">Add Email</button>
     </div>
 
-    <div class="container table-wrapper">
-        <table class="table">
-            <thead>
-            <tr>
-                <th scope="col">Business Name</th>
-                <th scope="col">Website</th>
-                <th scope="col">Email</th>
-                <th scope="col" class="phone-number">Phone Number</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr>
-                <td>KFC</td>
-                <td><a href="https://kfc.com">https://kfc.com</a></td>
-                <td>kfc@email.com</td>
-                <td>020 8812 1212</td>
-            </tr>
-            <tr>
-                <td>McDonald's</td>
-                <td><a href="https://mcdonalds.com">https://mcdonalds.com</a></td>
-                <td>mcdonalds@email.com</td>
-                <td>020 8888 8888</td>
-            </tr>
-            <tr>
-                <td>Subway</td>
-                <td><a href="https://subway.com">https://subway.com</a></td>
-                <td>subway@email.com</td>
-                <td>020 8777 7777</td>
-            </tr>
-            <tr>
-                <td>Starbucks</td>
-                <td><a href="https://starbucks.com">https://starbucks.com</a></td>
-                <td>starbucks@email.com</td>
-                <td>020 8666 6666</td>
-            </tr>
-            <tr>
-                <td>Burger King</td>
-                <td><a href="https://burgerking.com">https://burgerking.com</a></td>
-                <td>burgerking@email.com</td>
-                <td>020 8555 5555</td>
-            </tr>
-            </tbody>
-        </table>
+    <!-- Outreach data table -->
+    <div class="container shadow">
+        <div class="table-wrapper">
+            <table class="table" id="businessTable">
+                <thead>
+                <tr>
+                    <th scope="col">Business Name</th>
+                    <th scope="col">Website</th>
+                    <th scope="col">Email</th>
+                    <th scope="col" class="phone-number">Phone Number</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td>KFC</td>
+                    <td><a href="https://kfc.com">https://kfc.com</a></td>
+                    <td>kfc@email.com</td>
+                    <td>020 8812 1212</td>
+                </tr>
+                <tr>
+                    <td>McDonald's</td>
+                    <td><a href="https://mcdonalds.com">https://mcdonalds.com</a></td>
+                    <td>mcdonalds@email.com</td>
+                    <td>020 8888 8888</td>
+                </tr>
+                <tr>
+                    <td>Subway</td>
+                    <td><a href="https://subway.com">https://subway.com</a></td>
+                    <td>subway@email.com</td>
+                    <td>020 8777 7777</td>
+                </tr>
+                <tr>
+                    <td>Starbucks</td>
+                    <td><a href="https://starbucks.com">https://starbucks.com</a></td>
+                    <td>starbucks@email.com</td>
+                    <td>020 8666 6666</td>
+                </tr>
+                <tr>
+                    <td>Burger King</td>
+                    <td><a href="https://burgerking.com">https://burgerking.com</a></td>
+                    <td>burgerking@email.com</td>
+                    <td>020 8555 5555</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mt-3">
+            <div id="rowCount"></div>
+            <nav aria-label="Table Navigation">
+                <ul class="pagination" id="pagination">
+                    <li class="page-item"><a href="#" id="prevPage">Previous</a></li>
+                    <li class="page-item"><a href="#" id="nextPage">Next</a></li>
+                </ul>
+            </nav>
+        </div>
     </div>
-
-    <style>
-        .login-card {
-            width: 100%;
-            max-width: 400px;
-            border: none;
-            margin: 0 auto;
-        }
-
-        #emailPair {
-            position: fixed;
-            top: 0;
-            bottom: 0;
-            height: 100%;
-            width: 100%;
-            display: none;
-            z-index: 9999;
-            background-color: rgba(0,0,0,0.5);
-            align-items: center;
-            justify-content: center;
-            overflow: auto;
-            margin: 0;
-            padding: 0;
-        }
-
-<!--        #emailPair .login-card {-->
-<!--            width: 100%;-->
-<!--            max-width: 400px;-->
-<!--            border: none;-->
-<!--            margin: 0 auto;-->
-<!--        }-->
-
-    </style>
 </main>
 
+<!-- Pair email overlay -->
+<style>
+    .login-card {
+        width: 100%;
+        max-width: 400px;
+        border: none;
+        margin: 0 auto;
+    }
+
+    #emailPair {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        height: 100%;
+        width: 100%;
+        display: none;
+        z-index: 9999;
+        background-color: rgba(0,0,0,0.5);
+        align-items: center;
+        justify-content: center;
+        overflow: auto;
+        margin: 0;
+        padding: 0;
+    }
+
+    .close-larger {
+        font-size: 2rem;
+    }
+</style>
 <main role="main">
     <div id="emailPair">
         <div class="container text-center borderless">
             <div class="card p-3 login-card">
                 <div class="card-title">
                     <div class="col text-end">
-                        <button type="button" class="btn close" onclick="emailPair()" aria-label="Close">
+                        <button type="button" class="btn close close-larger" onclick="emailPair()" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
                         </button>
                     </div>
@@ -177,5 +202,56 @@
             overlay.style.display = 'none';
         }
     }
+
+    const rowsPerPage = 50;
+    let currentPage = 1;
+    const table = document.getElementById('businessTable');
+    const tbody = table.querySelector('tbody');
+    const rows = tbody.querySelectorAll('tr');
+    const totalRows = rows.length;
+    const totalPages = Math.ceil(totalRows / rowsPerPage);
+
+    const prevPageBtn = document.getElementById('prevPage');
+    const nextPageBtn = document.getElementById('nextPage');
+    const rowCountDisplay = document.getElementById('rowCount');
+
+    function showPage(page) {
+        const start = (page - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
+        rows.forEach((row, index) => {
+            row.style.display = (index >= start && index < end) ? '' : 'none';
+        });
+        updateRowCount(start, end);
+        updatePaginationButtons();
+    }
+
+    function updateRowCount(start, end) {
+        const displayEnd = Math.min(end, totalRows);
+        rowCountDisplay.textContent = `${start + 1} - ${displayEnd} of ${totalRows}`;
+    }
+
+    function updatePaginationButtons() {
+        prevPageBtn.parentElement.classList.toggle('disabled', currentPage === 1);
+        nextPageBtn.parentElement.classList.toggle('disabled', currentPage === totalPages);
+    }
+
+    prevPageBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (currentPage > 1) {
+            currentPage--;
+            showPage(currentPage);
+        }
+    });
+
+    nextPageBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (currentPage < totalPages) {
+            currentPage++;
+            showPage(currentPage);
+        }
+    });
+
+    // Initial page load
+    showPage(currentPage);
 </script>
 {% endblock %}

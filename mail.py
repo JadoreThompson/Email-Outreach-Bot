@@ -19,7 +19,7 @@ import ssl
 import time
 from datetime import timedelta, datetime
 
-from telegram_bot import notify_tele_phone_numbers, notify_tele_complete
+from tele import notify_tele_phone_numbers, notify_tele_complete
 
 
 load_dotenv('.env')
@@ -33,7 +33,10 @@ header = {
 }
 
 email_sender = os.getenv('EMAIL_SENDER')
+# email_sender = "sneakyredditpage@gmail.com"
+
 email_password = os.getenv('EMAIL_PASSWORD')
+# email_password = "Jadore10@"
 
 tele_api_key = os.getenv('TELE_API_KEY')
 base_url = f"https://api.telegram.org/bot{tele_api_key}/"
