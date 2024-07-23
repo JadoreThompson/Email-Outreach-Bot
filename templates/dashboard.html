@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<header>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container-fluid">
+            <div>
+                <img src="/static/images/Bold Modern Minimalist Gradient Technology Business Logo.png" style="width: 3rem;" alt="Logo">
+                <a href="/dashboard" class="navbar-brand">Outreach</a>
+            </div>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a href="/login" class="nav-link active" aria-current="page">Log In</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/signup" class="nav-link active" aria-current="page">Sign Up</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+</header>
+
+<style>
+    .table {
+        margin-top: 1rem;
+    }
+
+    .phone-number {
+        width: 150px;
+        white-space: nowrap;
+    }
+
+    .table-wrapper {
+        overflow-x:auto;
+    }
+
+    .email-pair {
+        margin-top: 1rem;
+    }
+</style>
+<main role="main">
+    <div class="container email-pair">
+        <button class="btn btn-primary" onclick="emailPair()">Add Email</button>
+    </div>
+
+    <div class="container table-wrapper">
+        <table class="table">
+            <thead>
+            <tr>
+                <th scope="col">Business Name</th>
+                <th scope="col">Website</th>
+                <th scope="col">Email</th>
+                <th scope="col" class="phone-number">Phone Number</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>KFC</td>
+                <td><a href="https://kfc.com">https://kfc.com</a></td>
+                <td>kfc@email.com</td>
+                <td>020 8812 1212</td>
+            </tr>
+            <tr>
+                <td>McDonald's</td>
+                <td><a href="https://mcdonalds.com">https://mcdonalds.com</a></td>
+                <td>mcdonalds@email.com</td>
+                <td>020 8888 8888</td>
+            </tr>
+            <tr>
+                <td>Subway</td>
+                <td><a href="https://subway.com">https://subway.com</a></td>
+                <td>subway@email.com</td>
+                <td>020 8777 7777</td>
+            </tr>
+            <tr>
+                <td>Starbucks</td>
+                <td><a href="https://starbucks.com">https://starbucks.com</a></td>
+                <td>starbucks@email.com</td>
+                <td>020 8666 6666</td>
+            </tr>
+            <tr>
+                <td>Burger King</td>
+                <td><a href="https://burgerking.com">https://burgerking.com</a></td>
+                <td>burgerking@email.com</td>
+                <td>020 8555 5555</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <style>
+        .login-card {
+            width: 100%;
+            max-width: 400px;
+            border: none;
+            margin: 0 auto;
+        }
+
+        #emailPair {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            height: 100%;
+            width: 100%;
+            display: none;
+            z-index: 9999;
+            background-color: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+            overflow: auto;
+            margin: 0;
+            padding: 0;
+        }
+
+<!--        #emailPair .login-card {-->
+<!--            width: 100%;-->
+<!--            max-width: 400px;-->
+<!--            border: none;-->
+<!--            margin: 0 auto;-->
+<!--        }-->
+
+    </style>
+</main>
+
+<main role="main">
+    <div id="emailPair">
+        <div class="container text-center borderless">
+            <div class="card p-3 login-card">
+                <div class="card-title">
+                    <div class="col text-end">
+                        <button type="button" class="btn close" onclick="emailPair()" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="row">
+                        <h3 class="card-title">Add Email</h3>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('views.email_pair') }}" method="post">
+                        <div class="row mb-4">
+                            <label for="email" class="text-start col-sm-4 col-form-label col-form-label-sm">Email</label>
+                            <br>
+                            <input type="email" class="form-control form-control-sm" id="email" name="password" placeholder="johndoe@example.com">
+                        </div>
+                        <div class="row mb-4">
+                            <label for="password" class="text-start col-sm-4 col-form-label col-form-label-sm">Password</label>
+                            <br>
+                            <input type="password" class="form-control form-control-sm" id="password" name="password" placeholder="chickenandeggs123">
+                        </div>
+                        <div class="row mb-3">
+                            <input class="btn btn-outline-primary" type="submit" value="Submit">
+                        </div>
+                        <div class="row mb-4">
+                            <span><a href="#">How to find your password?</a></span>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script>
+    function emailPair() {
+        var overlay = document.getElementById('emailPair');
+        if (overlay.style.display === 'none' || overlay.style.display === '') {
+            overlay.style.display = 'flex';
+        } else {
+            overlay.style.display = 'none';
+        }
+    }
+</script>
+{% endblock %}

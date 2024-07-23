@@ -56,3 +56,19 @@ def login():
 @views.route('/login-user', methods=['POST'])
 def login_user():
     form = LoginForm()
+    pass
+
+
+@views.route('/dashboard')
+def dashboard():
+    return render_template('dashboard.html')
+
+
+@views.route('/email-pair', methods=['POST'])
+def email_pair():
+    return
+
+
+@views.route('/notis')
+def get_notis():
+    return render_template('notis.html')
