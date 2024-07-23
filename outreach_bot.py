@@ -42,7 +42,8 @@ CACHE_DIR = './cache_collection'
 os.makedirs(CACHE_DIR, exist_ok=True)
 
 
-def get_companies(industry, next_page_token=None):
+# GETTING LIST OF COMPANIES FROM PLACES API
+async def get_companies(industry, session, next_page_token):
     payload = {
         'textQuery': industry,
         'locationBias': {
@@ -57,10 +58,31 @@ def get_companies(industry, next_page_token=None):
     if next_page_token:
         payload['pageToken'] = next_page_token
 
-    rsp = requests.post(url, headers=header, json=payload)
-    return rsp.json()
+    async with session.post(url, headers=header, json=payload) as rsp:
+        if rsp.status == 200:
+            data = await rsp.json()
+            data = data['places']
+            return data
 
 
+async def process_industry(industry, session, next_page_token=None):
+    all_companies = []
+
+    while True:
+        companies = await get_companies(industry, session, next_page_token)
+        if not companies or 'places' not in companies:
+            break
+
+        all_companies.extend(companies)
+        if 'nextPageToken' not in companies:
+            break
+
+        next_page_token = companies['nextPageToken']
+
+    return all_companies
+
+
+# GETTING OUTREACH DATA POINTS
 def save_cache(email, cache_file):
     with open(cache_file, 'wb') as f:
         pickle.dump({'timestamp': datetime.now(), 'data': email}, f)
@@ -117,13 +139,13 @@ async def get_company_details(session, company):
         print(f"Failed to fetch details for '{company['displayName']['text']}': {str(e)}")
 
 
-async def send_email(recipient):
+async def send_email(recipient, company):
     try:
         em = EmailMessage()
         em['From'] = email_sender
         em['To'] = recipient
-        em['Subject'] = 'sorry'
-        em.set_content('***')
+        em['Subject'] = f"Quantis | {company}"
+        em.set_content(f"Hi {company},\n\nWe've worked with businesses like yours to indentify and eliminate inefficiencie. Would you be open to a brief Zoom calll to discuss potential areas for improvement?\n\nIf you're interested select a convient time for you.\n\nBest regards,\nQuantis Solutions")
 
         await aiosmtplib.send(em, hostname='smtp.gmail.com', username=email_sender, password=email_password, port=465, use_tls=True)
 
@@ -136,34 +158,26 @@ async def send_email(recipient):
 
 async def outreach_to_company(session, company):
     async for email in get_company_details(session, company):
-        await send_email(email)
+        await send_email(email, company)
         await asyncio.sleep(10)
 
 
+# async def main():
+#     industries = ['restaurants', 'barbers', 'cafes', 'gyms']
+#     next_page_token = None
+#
+#     async with aiohttp.ClientSession() as session:
+#         tasks = [process_industry(industry, session, next_page_token) for industry in industries]
+#         for task in asyncio.as_completed(tasks):
+#             industry_data = await task
+#
+#             tasks = [outreach_to_company(session, company) for company in industry_data]
+#             await asyncio.gather(*tasks)
+#
+#         await notify_tele_complete(session)
+
 async def main():
-    industries = ['restaurants', 'barbers', 'cafes', 'gyms']
-
-    async with aiohttp.ClientSession() as session:
-        for industry in industries:
-            next_page_token = None
-            while True:
-                companies = get_companies(industry, next_page_token)
-                if not companies or 'places' not in companies:
-                    print('Nothing to scrape')
-                    break
-
-                tasks = [outreach_to_company(session, company) for company in companies['places']]
-                print(tasks)
-                await asyncio.gather(*tasks)
-
-                if 'nextPageToken' not in companies:
-                    print('No nextPageToken')
-                    break
-
-                next_page_token = companies['nextPageToken']
-                await asyncio.sleep(10)
-
-        await notify_tele_complete(session)
+    await send_email("tgjadore@gmail.com", 'Company')
 
 
 if __name__ == '__main__':

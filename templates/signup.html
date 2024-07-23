@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Sign Up{% endblock %}
+
+
+{% block content %}
+<style>
+    .fullscreen-center {
+        min-height: 80vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .borderless {
+        border-color: none !important;
+    }
+
+    .login-card {
+        width: 100%;
+        max-width: 400px;
+        border: none;
+        margin: 0 auto;
+    }
+
+    .btn-outline-google {
+        border:  1px solid red;
+        background-color: white;
+        border-radius: 0.35em;
+    }
+
+    @media (min-width: 650px) {
+        .login-card {
+            width: 50%;
+        }
+    }
+</style>
+<main role="main" class="fullscreen-center">
+    <div class="container text-center borderless">
+        <div class="card p-3 login-card">
+            <h3 class="card-title">Sign Up</h3>
+            <div class="card-body">
+                <form action="{{ url_for('views.login_user') }}" method="post">
+                    <div class="row mb-3">
+                        <label for="name" class="text-start col-sm-4 col-form-label col-form-label-sm">Name</label>
+                        <br>
+                        <input type="text" class="form-control form-control-sm" id="name" name="name" placeholder="John">
+                    </div>
+                    <div class="row mb-4">
+                        <label for="email" class="text-start col-sm-4 col-form-label col-form-label-sm">Email</label>
+                        <br>
+                        <input type="email" class="form-control form-control-sm" id="email" name="password" placeholder="johndoe@example.com">
+                    </div>
+                    <div class="row mb-4">
+                        <label for="password" class="text-start col-sm-4 col-form-label col-form-label-sm">Password</label>
+                        <br>
+                        <input type="password" class="form-control form-control-sm" id="password" name="password" placeholder="chickenandeggs123">
+                    </div>
+                    <div class="row mb-3">
+                        <input class="btn btn-outline-primary" type="submit" value="Submit">
+                    </div>
+                    <div class="row mb-3">
+                        <button class="btn-outline-google">
+                            <img class="" src="/static/images/Logo-google-icon-PNG.png" alt="" style="width: 2rem;">
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</main>
+{% endblock %}

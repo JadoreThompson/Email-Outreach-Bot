@@ -1,9 +1,5 @@
 import os
 from dotenv import load_dotenv
-
-import requests
-import json
-
 import asyncio
 
 
@@ -31,7 +27,8 @@ async def notify_tele_phone_numbers(company, phone, session):
 # Notify tele of scrape completion
 async def notify_tele_complete(session):
     message = "Scraping complete"
-    gif_url = "https://gifdb.com/images/high/spongebob-squarepants-done-and-done-2de4g1978uus7pp6.gif"
+    # gif_url = "https://gifdb.com/images/high/spongebob-squarepants-done-and-done-2de4g1978uus7pp6.gif"
+    gif_url = "spongebob-squarepants-done-and-done-2de4g1978uus7pp6.gif"
     url = base_url + f"sendAnimation?chat_id={chat_id}&caption={message}&animation={gif_url}"
 
     async with await session.get(url) as rsp:
