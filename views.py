@@ -47,7 +47,7 @@ running = False
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if 'state' not in session:
+        if 'user_id' not in session:
             return redirect(url_for('views.login', next=request.url))
         return f(*args, **kwargs)
 
@@ -56,22 +56,10 @@ def login_required(f):
 
 # Running the mail script
 scheduler = APScheduler(BackgroundScheduler())
-async def main_loop():
-    global running
-    running = True
-
-    while running:
-        try:
-            async with aiohttp.ClientSession() as session:
-                await mail_main(session)
-                print("[MAIL]: Cycle Completed. Waiting before next execution")
-        except Exception as e:
-            print(f"[SCRIPT ERROR]: ", e)
-            await asyncio.sleep(60)
 
 
-def run_main_outreach():
-    asyncio.run(main_loop())
+def run_outreach(user_id):
+    asyncio.run(mail_main(user_id))
 
 
 @views.route('/')
@@ -183,7 +171,7 @@ def callback():
         print("[ID INFO]: ", id_info)
         session['google_id'] = id_info.get('sub')
         session['name'] = id_info.get('name')
-        session['email'] = id_info.get('email')
+        session['user_id'] = id_info.get('email')
 
         with psycopg2.connect(**conn_params) as conn:
             with conn.cursor() as cur:
@@ -233,7 +221,17 @@ def logout_user():
 @login_required
 def dashboard():
     print("[DASHBOARD: SESS STATE]: ", session['state'])
-    return render_template('dashboard.html')
+    with psycopg2.connect(**conn_params) as conn:
+        with conn.cursor() as cur:
+            db_query = sql.SQL("""
+                SELECT * FROM sent_mail
+                WHERE author = %s;
+            """)
+            cur.execute(db_query, (session['user_id'], ))
+            sent_mail = cur.fetchall()
+            print("[DASHBOARD]: ", sent_mail)
+
+    return render_template('dashboard.html', sent_mail=sent_mail)
 
 
 @views.route('/email-pair', methods=['POST'])
@@ -243,11 +241,12 @@ def email_pair():
 
 
 @views.route('/start', methods=['POST'])
+@login_required
 def start_outreach():
+    print("[START OUTREACH]: ", session['user_id'])
     global running
-    print("[PRIOR OUTREACH BOOL]: ", running)
     if not running:
-        scheduler.add_job(id='continuous_outreach', func=run_main_outreach())
+        scheduler.add_job(id='continuous_outreach', func=run_outreach(session['user_id']))
         # TODO: create a little green blip showing running
         return jsonify({'message': 'running'})
     else:
@@ -256,6 +255,7 @@ def start_outreach():
 
 
 @views.route('/stop')
+@login_required
 def stop_outreach():
     global running
     if running:

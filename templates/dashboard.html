@@ -16,10 +16,10 @@
             <div class="collapse navbar-collapse" id="navbarSupportedContent">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     <li class="nav-item">
-                        <a href="/login" class="nav-link active" aria-current="page">Log In</a>
+                        <a href="/login" class="nav-link active" aria-current="page"></a>
                     </li>
                     <li class="nav-item">
-                        <a href="/signup" class="nav-link active" aria-current="page">Sign Up</a>
+                        <a href="/signup" class="nav-link active" aria-current="page"></a>
                     </li>
                 </ul>
             </div>
@@ -86,45 +86,16 @@
                     <th scope="col">Business Name</th>
                     <th scope="col">Website</th>
                     <th scope="col">Email</th>
-                    <th scope="col">Industry</th>
-                    <th scope="col" class="phone-number">Phone Number</th>
                 </tr>
                 </thead>
                 <tbody>
+                {% for email in sent_mail %}
                 <tr>
-                    <td>KFC</td>
-                    <td><a href="https://kfc.com">https://kfc.com</a></td>
-                    <td>kfc@email.com</td>
-                    <td>Fast Food</td>
-                    <td>020 8812 1212</td>
+                    <td>{{ email[2] }}</td>
+                    <td>{{ email[3] }}</td>
+                    <td>{{ email[0] }}</td>
                 </tr>
-                <tr>
-                    <td>McDonald's</td>
-                    <td><a href="https://mcdonalds.com">https://mcdonalds.com</a></td>
-                    <td>mcdonalds@email.com</td>
-                    <td>Fast Food</td>
-                    <td>020 8888 8888</td>
-                </tr>
-                <tr>
-                    <td>Subway</td>
-                    <td><a href="https://subway.com">https://subway.com</a></td>
-                    <td>subway@email.com</td>
-                    <td>Fast Food</td>
-                    <td>020 8777 7777</td>
-                </tr>
-                <tr>
-                    <td>Starbucks</td>
-                    <td><a href="https://starbucks.com">https://starbucks.com</a></td>
-                    <td>starbucks@email.com</td>
-                    <td>Fast Food</td>
-                    <td>020 8666 6666</td>
-                </tr>
-                <tr>
-                    <td>Burger King</td>
-                    <td><a href="https://burgerking.com">https://burgerking.com</a></td>
-                    <td>burgerking@email.com</td>
-                    <td>020 8555 5555</td>
-                </tr>
+                {% endfor %}
                 </tbody>
             </table>
         </div>
@@ -208,7 +179,38 @@
     </div>
 </main>
 
-
+<style>
+    .nav .nav-item a {
+        font-size: 0.75rem;
+    }
+</style>
+<div class="b-example-divider"></div>
+<div class="b-example-divider"></div>
+<div class="b-example-divider"></div>
+<div class="container">
+    <footer class="row row-cols-1 row-cols-sm-2 row-cols-md-5 py-5 my-5 border-top">
+        <div class="col mb-3">
+            <a href="" class="d-flex align-items-center mb-3 link-body-emphasis text-decoration-none">
+                <svg class="bi me-2">
+                    <use xlink:href="#bootstrap"></use>
+                </svg>
+            </a>
+            <p class="text-body-secondary">© 2024</p>
+        </div>
+        <div class="col mb-3"></div> <!-- Space between columns -->
+        <div class="col mb-3">
+            <h5>About</h5>
+            <ul class="nav flex-column">
+                <li class="nav-item mb-2">
+                    <a href="#" class="nav-link p-0 text-body-secondary">How to find password?</a>
+                </li>
+                <li class="nav-item mb-2">
+                    <a href="#" class="nav-link p-0 text-body-secondary">How to get telegram notifications?</a>
+                </li>
+            </ul>
+        </div>
+    </footer>
+</div>
 
 <script>
     function emailPair() {

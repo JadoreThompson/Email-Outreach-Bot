@@ -6,6 +6,7 @@ import traceback
 
 import aiohttp
 import aiosmtplib
+import psycopg2
 from dotenv import load_dotenv
 
 import json
@@ -20,8 +21,11 @@ import ssl
 import time
 from datetime import timedelta, datetime
 
+from psycopg2 import sql
+
 from tele import notify_tele_phone_numbers, notify_tele_complete
 
+from db import conn_params
 
 load_dotenv('.env')
 
@@ -68,21 +72,22 @@ async def get_companies(industry, session, next_page_token):
     async with session.post(url, headers=header, json=payload) as rsp:
         if rsp.status == 200:
             data = await rsp.json()
-            data = data['places']
             return data
         else:
             print("[GET COMPANIES]: ", rsp.status)
 
 
+# Infinite looping over all companies within an industry
 async def process_industry(industry, session, next_page_token=None):
     all_companies = []
 
     while True:
         companies = await get_companies(industry, session, next_page_token)
-        if not companies or 'places' not in companies:
+        if 'places' not in companies:
             break
 
-        all_companies.extend(companies)
+        all_companies.extend(companies['places'])
+
         if 'nextPageToken' not in companies:
             break
 
@@ -91,7 +96,7 @@ async def process_industry(industry, session, next_page_token=None):
     return all_companies
 
 
-# GETTING OUTREACH DATA POINTS
+# Getting outreach data points
 def save_cache(email, cache_file):
     with open(cache_file, 'wb') as f:
         pickle.dump({'timestamp': datetime.now(), 'data': email}, f)
@@ -119,6 +124,7 @@ async def get_company_details(session, company):
 
         if website is None:
             if number:
+                # Sending telegram a notification that the business has no website but has a +44
                 asyncio.create_task(notify_tele_phone_numbers(company['displayName']['text'], number, session))
 
         return False
@@ -148,42 +154,63 @@ async def get_company_details(session, company):
         print(f"Failed to fetch details for '{company['displayName']['text']}': {str(e)}")
 
 
-async def send_email(recipient, company):
+# Outreaching
+async def send_email(recipient, company, user_id):
     try:
         em = EmailMessage()
         em['From'] = email_sender
         em['To'] = recipient
-        em['Subject'] = f"Quantis | {company}"
+        em['Subject'] = f"Quantis | {company['displayName']['text']}"
         em.set_content(f"Hi {company},\n\nWe've worked with businesses like yours to indentify and eliminate inefficiencie. Would you be open to a brief Zoom calll to discuss potential areas for improvement?\n\nIf you're interested select a convient time for you.\n\nBest regards,\nQuantis Solutions")
 
         await aiosmtplib.send(em, hostname='smtp.gmail.com', username=email_sender, password=email_password, port=465, use_tls=True)
 
         print("Email sent successfully")
+        with psycopg2.connect(**conn_params) as conn:
+            with conn.cursor() as cur:
+                db_query = sql.SQL("""
+                    SELECT email FROM users WHERE email = %s;
+                """)
+                cur.execute(db_query, (user_id, ))
+                row = cur.fetchone()
+                print("[SEND EMAIL]: ", row)
+                if not row:
+                    return
+
+                insert_script = sql.SQL("""
+                    INSERT INTO sent_mail(recipient, author, b_name, site)
+                    VALUES (%s, %s, %s, %s);
+                """)
+                cur.execute(insert_script, (recipient, row[0], company['displayName']['text'], company['websiteUri']), )
+
         return True
     except Exception as e:
         print(f"Failed to send email: {str(e)}")
         return False
 
 
-async def outreach_to_company(session, company, limit):
+# Merging the function to get email and send email
+async def outreach_to_company(session, company, limit, user_id):
     async for email in get_company_details(session, company):
-        await send_email(email, company)
+        await send_email(email, company, user_id)
         await asyncio.sleep(limit)
 
 
-# async def main():
-#     await send_email("tgjadore@gmail.com", 'Company')
+async def mail_main(user_id="jadorethompsonz@gmail.com"):
+    industries = ['barbers', 'gyms', 'salons']
+    next_page_token = None
 
-
-async def main():
-    industry = 'resturaunts'
     async with aiohttp.ClientSession() as session:
-        next_page_token = None
-        companies = await process_industry(industry, session, next_page_token)
-        for company in companies:
-            await outreach_to_company(session, company,10)
+        for industry in industries:
+            companies = await process_industry(industry, session, next_page_token)
+            print("[PROCESS INDUSTRY]: ", companies)
+
+            for company in companies:
+                await outreach_to_company(session, company, 4380, user_id)
+
+            await notify_tele_complete(session)
 
 if __name__ == '__main__':
-    # asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-    asyncio.run(main())
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+    asyncio.run(mail_main())
     
