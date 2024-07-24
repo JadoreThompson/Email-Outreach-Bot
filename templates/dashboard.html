@@ -83,6 +83,7 @@
             <table class="table" id="businessTable">
                 <thead>
                 <tr>
+                    <th>ID</th>
                     <th scope="col">Business Name</th>
                     <th scope="col">Website</th>
                     <th scope="col">Email</th>
@@ -96,6 +97,12 @@
                     <td>{{ email[0] }}</td>
                 </tr>
                 {% endfor %}
+                <tr>
+                    <td>1</td>
+                    <td>KFC</td>
+                    <td>https://kfc.com</td>
+                    <td>kfc@email.com</td>
+                </tr>
                 </tbody>
             </table>
         </div>
@@ -159,16 +166,23 @@
                         <div class="row mb-4">
                             <label for="email" class="text-start col-sm-4 col-form-label col-form-label-sm">Email</label>
                             <br>
-                            <input type="email" class="form-control form-control-sm" id="email" name="password" placeholder="johndoe@example.com">
+                            <input type="email" class="form-control form-control-sm" id="email" name="password" placeholder="johndoe@example.com" required>
                         </div>
                         <div class="row mb-4">
                             <label for="password" class="text-start col-sm-4 col-form-label col-form-label-sm">Password</label>
                             <br>
-                            <input type="password" class="form-control form-control-sm" id="password" name="password" placeholder="chickenandeggs123">
+                            <input type="password" class="form-control form-control-sm" id="password" name="password" placeholder="chickenandeggs123" required>
+                        </div>
+                        <div class="row mb-3">
+                            <label for="industries" class="text-start col-sm-4 col-form-label col-form-label-sm">Industries</label>
+                            <br>
+                            <input type="text" class="form-control form-control-sm" name="industries" id="industries" required>
                         </div>
                         <div class="row mb-3">
                             <input class="btn btn-outline-primary" type="submit" value="Submit">
                         </div>
+                        <div class="row mb-4 tags"></div>
+                        <small>Add up to 5 industries</small>
                         <div class="row mb-4">
                             <span><a href="https://www.youtube.com/watch?v=I9x0w8cjR_o&ab_channel=StudyGyaan" target="_blank">How to find your password?</a></span>
                         </div>
@@ -182,6 +196,9 @@
 <style>
     .nav .nav-item a {
         font-size: 0.75rem;
+    }
+    ul li {
+        margin-right: 1rem;
     }
 </style>
 <div class="b-example-divider"></div>

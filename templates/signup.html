@@ -29,6 +29,11 @@
         border-radius: 0.35em;
     }
 
+    .btn-outline-google:hover {
+        background-color: red;
+        color: white;
+    }
+
     @media (min-width: 650px) {
         .login-card {
             width: 50%;
@@ -41,7 +46,10 @@
             <h3 class="card-title">Sign Up</h3>
             <div class="card-body">
                 <form action="{{ url_for('views.signup_user') }}" method="post">
-                    <div class="row mb-3">
+                    <div class="row mb-4">
+                        <label for="name" class="text-start col-sm-4 col-form-label col-form-label-sm">Name</label>
+                        <br>
+                        <input type="text" class="form-control form-control-sm" id="name" name="name" placeholder="John">
                     </div>
                     <div class="row mb-4">
                         <label for="email" class="text-start col-sm-4 col-form-label col-form-label-sm">Email</label>
