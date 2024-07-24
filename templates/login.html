@@ -4,12 +4,6 @@
 
 {% block content %}
 <style>
-    .btn-outline-google {
-        border:  1px solid red;
-        background-color: white;
-        border-radius: 0.35em;
-    }
-
     @media (min-width: 650px) {
         .login-card {
             width: 50%;
@@ -26,6 +20,9 @@
                         <label for="email" class="text-start col-sm-4 col-form-label col-form-label-sm">Email</label>
                         <br>
                         <input type="email" class="form-control form-control-sm" id="email" name="password" placeholder="johndoe@example.com">
+                        {% if errors and errors.name %}
+                            <span>{{ errors.name[0] }}</span>
+                        {% endif %}
                     </div>
                     <div class="row mb-3">
                         <label for="password" class="text-start col-sm-6 col-form-label col-form-label-sm">Password</label>
@@ -40,6 +37,11 @@
                             <img src="/static/images/Logo-google-icon-PNG.png" alt="Google Logo" style="width: 1.5rem; margin-right: 0.5rem;">
                             Sign in with Google
                         </a>
+                    </div>
+                    <div class="row mb-3">
+                        {% if error_message %}
+                        <span style="color: red;">{{ error_message }}</span>
+                        {% endif %}
                     </div>
                 </form>
             </div>

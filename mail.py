@@ -24,7 +24,7 @@ from tele import notify_tele_phone_numbers, notify_tele_complete
 
 load_dotenv('.env')
 
-places_api_key = os.getenv('PLACES_API_KEY')
+places_api_key = os.getenv('GOOGLE_PLACES_API_KEY')
 url = "https://places.googleapis.com/v1/places:searchText"
 header = {
     'X-Goog-Api-Key': places_api_key,
@@ -165,22 +165,22 @@ async def outreach_to_company(session, company):
         await asyncio.sleep(10)
 
 
-# async def main():
-#     industries = ['restaurants', 'barbers', 'cafes', 'gyms']
-#     next_page_token = None
-#
-#     async with aiohttp.ClientSession() as session:
-#         tasks = [process_industry(industry, session, next_page_token) for industry in industries]
-#         for task in asyncio.as_completed(tasks):
-#             industry_data = await task
-#
-#             tasks = [outreach_to_company(session, company) for company in industry_data]
-#             await asyncio.gather(*tasks)
-#
-#         await notify_tele_complete(session)
-
 async def main():
-    await send_email("tgjadore@gmail.com", 'Company')
+    industries = ['restaurants', 'barbers', 'cafes', 'gyms']
+    next_page_token = None
+
+    async with aiohttp.ClientSession() as session:
+        tasks = [process_industry(industry, session, next_page_token) for industry in industries]
+        for task in asyncio.as_completed(tasks):
+            industry_data = await task
+
+            tasks = [outreach_to_company(session, company) for company in industry_data]
+            await asyncio.gather(*tasks)
+
+        await notify_tele_complete(session)
+
+# async def main():
+#     await send_email("tgjadore@gmail.com", 'Company')
 
 
 if __name__ == '__main__':
