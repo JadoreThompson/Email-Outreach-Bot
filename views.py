@@ -1,13 +1,10 @@
+import asyncio
 import os
 
-from celery.schedules import crontab
+import aiohttp
 from dotenv import load_dotenv
 
 from flask import Blueprint, render_template, request, url_for, flash, redirect, session, jsonify
-
-from app import celery
-from forms import SignUpForm, LoginForm
-from celery import run_outreach
 
 import psycopg2
 from psycopg2 import sql
@@ -18,7 +15,13 @@ from google_auth_oauthlib.flow import Flow
 from google.auth.transport import requests
 from google.oauth2 import id_token
 
-from functools import wraps
+from functools import wraps  # Decorators
+
+from forms import SignUpForm, LoginForm
+from mail import mail_main
+
+from flask_apscheduler import APScheduler
+from apscheduler.schedulers.background import BackgroundScheduler
 
 
 load_dotenv('.env')
@@ -27,14 +30,19 @@ views = Blueprint('views', __name__)
 
 # Disabling HTTPs requirement for dev purposes
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+
 flow = Flow.from_client_secrets_file(
     os.getcwd() + "\static\client_secret_84706046961-bh1h1atvjaim09r3qh1ta1c2v3tefk92.apps.googleusercontent.com.json",
-    scopes=['openid', 'https://www.googleapis.com/auth/userinfo.email', 'https://www.googleapis.com/auth/userinfo.profile'],
+    scopes=['openid', 'https://www.googleapis.com/auth/userinfo.email',
+            'https://www.googleapis.com/auth/userinfo.profile'],
     redirect_uri='http://localhost:5000/callback'
 )
-print("[FLOW]: ", flow)
 
 
+running = False
+
+
+# Email outreach
 # Decorator for requiring login
 def login_required(f):
     @wraps(f)
@@ -42,7 +50,28 @@ def login_required(f):
         if 'state' not in session:
             return redirect(url_for('views.login', next=request.url))
         return f(*args, **kwargs)
+
     return decorated_function
+
+
+# Running the mail script
+scheduler = APScheduler(BackgroundScheduler())
+async def main_loop():
+    global running
+    running = True
+
+    while running:
+        try:
+            async with aiohttp.ClientSession() as session:
+                await mail_main(session)
+                print("[MAIL]: Cycle Completed. Waiting before next execution")
+        except Exception as e:
+            print(f"[SCRIPT ERROR]: ", e)
+            await asyncio.sleep(60)
+
+
+def run_main_outreach():
+    asyncio.run(main_loop())
 
 
 @views.route('/')
@@ -69,7 +98,7 @@ def signup_user():
                     FROM users
                     WHERE email = %s;
                 ''')
-                cur.execute(check_query, (form.email, ))
+                cur.execute(check_query, (form.email,))
                 row = cur.fetchone()
                 if row:
                     error_message = "Email already registered..."
@@ -78,7 +107,7 @@ def signup_user():
                         INSERT INTO users(email, password, firstname)
                         VALUES (%s, %s, %s);
                     ''')
-                    cur.execute(insert_query, (form.email, form.confirm, form.name, ))
+                    cur.execute(insert_query, (form.email, form.confirm, form.name,))
 
                     flash("Successfully Registered")
                     return redirect(url_for('views.dashboard'))
@@ -108,7 +137,7 @@ def login_user():
 
     if form.validate():
         with psycopg2.connect(**conn_params) as conn:
-             with conn.cursor() as cur:
+            with conn.cursor() as cur:
                 user_query = sql.SQL("""
                     SELECT email FROM users
                     WHERE email = %s;
@@ -173,7 +202,7 @@ def callback():
                     ON CONFLICT DO NOTHING;
                 """)
                 cur.execute(insert_script, (id_info.get('email'), os.getenv('GOOGLE_PLACEHOLDER_PASSWORD'),
-                                            id_info.get('name'), id_info.get('sub')),)
+                                            id_info.get('name'), id_info.get('sub')), )
 
         return redirect(url_for('views.dashboard'))
 
@@ -213,40 +242,28 @@ def email_pair():
     return
 
 
-from datetime import timedelta
+@views.route('/start', methods=['POST'])
+def start_outreach():
+    global running
+    print("[PRIOR OUTREACH BOOL]: ", running)
+    if not running:
+        scheduler.add_job(id='continuous_outreach', func=run_main_outreach())
+        # TODO: create a little green blip showing running
+        return jsonify({'message': 'running'})
+    else:
+        # TODO: process already running
+        return jsonify({'message': 'already running'})
 
 
-@views.route('/schedule_outreach', methods=['POST'])
-def schedule_outreach():
-    frequency = request.form.get('frequency')
-    spread_evenly = request.form.get('spread_evenly') == 'true'
-
-    if frequency:
-        # Schedule based on frequency
-        if frequency == 'daily':
-            celery.add_periodic_task(
-                crontab(minute=0, hour=0),  # Run at midnight every day
-                run_outreach.s(frequency, spread_evenly)
-            )
-        elif frequency == 'weekly':
-            celery.add_periodic_task(
-                crontab(minute=0, hour=0, day_of_week=1),  # Run at midnight every Monday
-                run_outreach.s(frequency, spread_evenly)
-            )
-        elif frequency == 'monthly':
-            celery.add_periodic_task(
-                crontab(minute=0, hour=0, day_of_month=1),  # Run at midnight on the 1st of every month
-                run_outreach.s(frequency, spread_evenly)
-            )
-    elif spread_evenly:
-        # Spread tasks evenly throughout the day
-        for hour in range(24):
-            celery.add_periodic_task(
-                crontab(minute=0, hour=hour),
-                run_outreach.s(frequency, spread_evenly)
-            )
-
-    return jsonify({'message': 'Outreach scheduled successfully'})
+@views.route('/stop')
+def stop_outreach():
+    global running
+    if running:
+        running = False
+        scheduler.remove_job('continuous_outreach')
+        # TODO: return the new blip with red showing not running
+    else:
+        return jsonify({'message': 'No process is currently running'})
 
 
 @views.route('/notis')

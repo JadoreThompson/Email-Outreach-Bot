@@ -62,10 +62,20 @@
     }
 </style>
 <main role="main">
-    <!-- Add email btn -->
-    <div class="container email-pair">
-        <button class="btn btn-primary" onclick="emailPair()">Add Email</button>
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center email-pair">
+            <button class="btn btn-primary" onclick="emailPair()">Add Email</button>
+            <div class="text-end">
+                <button class="btn btn-outline-secondary" onclick="startOutreach()">&#9654;</button>
+                <button class="btn btn-outline-secondary" onclick="stopOutreach()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pause" viewBox="0 0 16 16">
+                        <path d="M6 3.5a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-1 0V4a.5.5 0 0 1 .5-.5m4 0a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-1 0V4a.5.5 0 0 1 .5-.5"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
     </div>
+
 
     <!-- Outreach data table -->
     <div class="container shadow">
@@ -198,29 +208,7 @@
     </div>
 </main>
 
-<main role="main">
-    <div id="scheduleOutreach">
-        <div class="container text-center border-less">
-            <div class="card p-3 login-card">
-                <div class="card-title">
-                    <h3>Schedule Outreach</h3>
-                </div>
-                <div class="card-body">
-                    <form action="{{ url_for('views.schedule_outreach') }}" method="post">
-                        <div class="row mb-3">
-                            <label for="frequency" class="text-startcol-sm-4 col-form-label col-form-label-sm">Frequency</label>
-                            <br>
-                            <select name="frequency">
-                                <option value="daily">Daily</option>
-                                <option value="weekly">Weekly</option>
-                            </select>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-</main>
+
 
 <script>
     function emailPair() {
@@ -282,5 +270,17 @@
 
     // Initial page load
     showPage(currentPage);
+
+    function startOutreach() {
+        fetch('/start', {method: 'POST'})
+            .then(response => response.json())
+            .then(data => alert(data.message));
+    }
+
+    function stopOutreach() {
+        fetch('/stop', {method: 'POST'})
+            .then(response => response.json())
+            .then(data => alert(data.message));
+    }
 </script>
 {% endblock %}

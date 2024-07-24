@@ -2,6 +2,7 @@ import asyncio
 import pickle
 
 import os
+import traceback
 
 import aiohttp
 import aiosmtplib
@@ -47,6 +48,9 @@ os.makedirs(CACHE_DIR, exist_ok=True)
 
 # GETTING LIST OF COMPANIES FROM PLACES API
 async def get_companies(industry, session, next_page_token):
+    if session is None:
+        raise ValueError("Session object is None")
+
     payload = {
         'textQuery': industry,
         'locationBias': {
@@ -66,6 +70,8 @@ async def get_companies(industry, session, next_page_token):
             data = await rsp.json()
             data = data['places']
             return data
+        else:
+            print("[GET COMPANIES]: ", rsp.status)
 
 
 async def process_industry(industry, session, next_page_token=None):
@@ -159,29 +165,25 @@ async def send_email(recipient, company):
         return False
 
 
-async def outreach_to_company(session, company):
+async def outreach_to_company(session, company, limit):
     async for email in get_company_details(session, company):
         await send_email(email, company)
-        await asyncio.sleep(10)
+        await asyncio.sleep(limit)
 
-
-async def main():
-    industries = ['restaurants', 'barbers', 'cafes', 'gyms']
-    next_page_token = None
-
-    async with aiohttp.ClientSession() as session:
-        tasks = [process_industry(industry, session, next_page_token) for industry in industries]
-        for task in asyncio.as_completed(tasks):
-            industry_data = await task
-
-            tasks = [outreach_to_company(session, company) for company in industry_data]
-            await asyncio.gather(*tasks)
-
-        await notify_tele_complete(session)
 
 # async def main():
 #     await send_email("tgjadore@gmail.com", 'Company')
 
 
+async def main():
+    industry = 'resturaunts'
+    async with aiohttp.ClientSession() as session:
+        next_page_token = None
+        companies = await process_industry(industry, session, next_page_token)
+        for company in companies:
+            await outreach_to_company(session, company,10)
+
 if __name__ == '__main__':
+    # asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
     asyncio.run(main())
+    
