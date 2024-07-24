@@ -231,7 +231,9 @@ def dashboard():
             sent_mail = cur.fetchall()
             print("[DASHBOARD]: ", sent_mail)
 
+
     # TODO: Make the add email button functional, take their email and password store in DB and use that for the script when they decide the press play
+
 
     return render_template('dashboard.html', sent_mail=sent_mail)
 
