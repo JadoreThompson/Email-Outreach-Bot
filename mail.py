@@ -10,6 +10,9 @@ import os
 from dotenv import load_dotenv
 
 import aiohttp
+from aiohttp_retry import RetryClient, ExponentialRetry
+
+
 import aiosmtplib
 import psycopg2
 from psycopg2 import sql
@@ -97,6 +100,7 @@ async def process_industry(industry, session, next_page_token=None):
 
         next_page_token = companies['nextPageToken']
 
+    print("[PROCESS INDUSTRY]: ", all_companies)
     return all_companies
 
 
@@ -119,25 +123,25 @@ async def get_company_details(session, company):
     cache_file = os.path.join(CACHE_DIR, f"{company['displayName']['text']}.pkl")
     cache_expiry = timedelta(hours=720)
 
-    def check_phone_and_website():
-        number = company.get('nationalPhoneNumber')
-        website = company.get('websiteUri')
-
-        if website:
-            return True
-
-        if website is None:
-            if number:
-                # Sending telegram a notification that the business has no website but has a +44
-                asyncio.create_task(notify_tele_phone_numbers(company['displayName']['text'], number, session))
-
-        return False
+    # def check_phone_and_website():
+    #     number = company.get('nationalPhoneNumber')
+    #     website = company.get('websiteUri')
+    #
+    #     if website:
+    #         return True
+    #
+    #     if website is None:
+    #         if number:
+    #             # Sending telegram a notification that the business has no website but has a +44
+    #             asyncio.create_task(notify_tele_phone_numbers(company['displayName']['text'], number, session))
+    #
+    #     return False
 
     cache = load_cache(cache_expiry, cache_file)
     if cache:
         return
 
-    check_phone_and_website()
+    # check_phone_and_website()
 
     try:
         async with session.get(company['websiteUri']) as rsp:
@@ -156,9 +160,6 @@ async def get_company_details(session, company):
 
     except Exception as e:
         print(f"Failed to fetch details for '{company['displayName']['text']}': {str(e)}")
-
-
-# Getting the SPF authentication to prevent phishing and show credibility
 
 
 # Outreaching
@@ -204,14 +205,46 @@ async def send_email(recipient, company, industry, user_id):
 async def outreach_to_company(session, company, industry, limit, user_id):
     async for email in get_company_details(session, company):
         await send_email(email, company, industry, user_id)
-        await asyncio.sleep(limit)
+        time.sleep(1)
+
+
+async def get_phone_numbers(session, industries):
+    phone_leads = []
+
+    for industry in industries:
+        print("[PHONE NUMBERS]: ", industry)
+        companies = await process_industry(industry, session)
+        print("[PHONE NUMBERS]: ", companies)
+        for company in companies:
+            if 'nationalPhoneNumber' in company and 'websiteUri' not in company:
+                print("[PHONE NUMBERS]: ", company['nationalPhoneNumber'])
+
+                phone_leads.append({
+                    'company': company['displayName']['text'],
+                    'phone': company['nationalPhoneNumber']
+                })
+
+    print("[PHONE NUMBERS]: ", phone_leads)
+    print("[PHONE NUMBERS]: ", len(phone_leads))
+    return phone_leads
 
 
 async def mail_main(user_id="quantissol@gmail.com"):
     industries = ['barbers', 'gyms', 'salons', 'restaurants', 'retail_stores', 'hotels', 'dental_clinics', 'auto_repair', 'accountants', 'private dental', 'watch dealership']
     next_page_token = None
 
-    async with aiohttp.ClientSession() as session:
+    timeout = aiohttp.ClientTimeout(total=1000)
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        retry_options = ExponentialRetry(attempts=3)
+        retry_client = RetryClient(client_session=session, retry_options=retry_options)
+
+        phone_leads = await get_phone_numbers(retry_client, industries)
+        for lead in phone_leads:
+            lead['session'] = session
+            await asyncio.create_task(notify_tele_phone_numbers(**lead))
+            print(f"[PHONE NUMBERS]: Successfully sent notification for {lead['company']}")
+            await asyncio.sleep(5)
+
         for industry in industries:
             companies = await process_industry(industry, session, next_page_token)
             print("[PROCESS INDUSTRY]: ", companies)
@@ -219,7 +252,7 @@ async def mail_main(user_id="quantissol@gmail.com"):
             for company in companies:
                 await outreach_to_company(session, company, industry, 4380, user_id)
 
-            await notify_tele_complete(session)
+        await notify_tele_complete(session)
 
 
 if __name__ == '__main__':

@@ -16,11 +16,14 @@ async def notify_tele_phone_numbers(company, phone, session):
     message = f"{datetime.date.today()}\n{company} has no website\nHere's their phone number\n{phone}"
     url = base_url + f"sendMessage?chat_id={chat_id}&text={message}"
 
-    async with await session.get(url) as rsp:
-        if rsp.status == 200:
-            outcome = await rsp.json()
-            if outcome["ok"]:
-                return True
+    try:
+        async with await session.get(url) as rsp:
+            if rsp.status == 200:
+                outcome = await rsp.json()
+                if outcome["ok"]:
+                    return True
+    except Exception as e:
+        print(f"NOTIFY TELE NUMBERS]: {str(e)}")
 
         return False
 
