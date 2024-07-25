@@ -14,7 +14,8 @@ def create_ai_mail(company_name, industry):
     prompt = os.getenv('GEMINI_PROMPT')
     prompt = prompt.replace('{company_name}', company_name).replace('{industry}', industry)
     prompt = prompt.replace('[email]', '').replace('[phone number]', '07532 65414\n07878 942071').replace('[website]', '')
-
+    promot = prompt.replace('**', '')
+    
     rsp = model.generate_content(prompt)
     rsp = rsp.text
 
