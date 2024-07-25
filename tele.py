@@ -1,3 +1,4 @@
+import datetime
 import os
 from dotenv import load_dotenv
 import asyncio
@@ -12,7 +13,7 @@ chat_id = os.getenv('TELE_CHAT_ID')
 
 # Notify tele of no site and phone number
 async def notify_tele_phone_numbers(company, phone, session):
-    message = f"{company} has no website.\nHere's their phone number\n{phone}"
+    message = f"{datetime.date.today()}\n{company} has no website\nHere's their phone number\n{phone}"
     url = base_url + f"sendMessage?chat_id={chat_id}&text={message}"
 
     async with await session.get(url) as rsp:

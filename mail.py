@@ -1,13 +1,18 @@
+import spf
+import dns
+
 import asyncio
+import traceback
+
 import pickle
 
 import os
-import traceback
+from dotenv import load_dotenv
 
 import aiohttp
 import aiosmtplib
 import psycopg2
-from dotenv import load_dotenv
+from psycopg2 import sql
 
 import json
 import requests
@@ -21,11 +26,10 @@ import ssl
 import time
 from datetime import timedelta, datetime
 
-from psycopg2 import sql
 
 from tele import notify_tele_phone_numbers, notify_tele_complete
-
 from db import conn_params
+from ai import create_ai_mail
 
 load_dotenv('.env')
 
@@ -50,7 +54,7 @@ CACHE_DIR = './cache_collection'
 os.makedirs(CACHE_DIR, exist_ok=True)
 
 
-# GETTING LIST OF COMPANIES FROM PLACES API
+# Getting list of companies from places API
 async def get_companies(industry, session, next_page_token):
     if session is None:
         raise ValueError("Session object is None")
@@ -59,7 +63,7 @@ async def get_companies(industry, session, next_page_token):
         'textQuery': industry,
         'locationBias': {
             'circle': {
-                'center': {'latitude': 51.5964, 'longitude': 0.0349},
+                'center': {'latitude': 51.5416043, 'longitude': 0.0349},
                 'radius': 50000.0
             }
         },
@@ -154,14 +158,21 @@ async def get_company_details(session, company):
         print(f"Failed to fetch details for '{company['displayName']['text']}': {str(e)}")
 
 
+# Getting the SPF authentication to prevent phishing and show credibility
+
+
 # Outreaching
-async def send_email(recipient, company, user_id):
+async def send_email(recipient, company, industry, user_id):
     try:
+        company_name = company['displayName']['text'].title()
+        calendly_link = "https://calendly.com/quantissol/30min"
+
         em = EmailMessage()
         em['From'] = email_sender
         em['To'] = recipient
-        em['Subject'] = f"Quantis | {company['displayName']['text']}"
-        em.set_content(f"Hi {company},\n\nWe've worked with businesses like yours to indentify and eliminate inefficiencie. Would you be open to a brief Zoom calll to discuss potential areas for improvement?\n\nIf you're interested select a convient time for you.\n\nBest regards,\nQuantis Solutions")
+        em['Subject'] = f"Quantis | {company_name}"
+        em.set_content(f"Hi {company_name},\n\nWe've worked with businesses like yours to indentify and eliminate inefficiencie. Would you be open to a brief Zoom calll to discuss potential areas for improvement?\n\nIf you're interested select a convient time for you.\n\n{calendly_link}\n\nBest regards,\nQuantis Solutions")
+        em.set_content(create_ai_mail(company_name, industry))
 
         await aiosmtplib.send(em, hostname='smtp.gmail.com', username=email_sender, password=email_password, port=465, use_tls=True)
 
@@ -190,14 +201,14 @@ async def send_email(recipient, company, user_id):
 
 
 # Merging the function to get email and send email
-async def outreach_to_company(session, company, limit, user_id):
+async def outreach_to_company(session, company, industry, limit, user_id):
     async for email in get_company_details(session, company):
-        await send_email(email, company, user_id)
+        await send_email(email, company, industry, user_id)
         await asyncio.sleep(limit)
 
 
-async def mail_main(user_id="jadorethompsonz@gmail.com"):
-    industries = ['barbers', 'gyms', 'salons']
+async def mail_main(user_id="quantissol@gmail.com"):
+    industries = ['barbers', 'gyms', 'salons', 'restaurants', 'retail_stores', 'hotels', 'dental_clinics', 'auto_repair', 'accountants', 'private dental', 'watch dealership']
     next_page_token = None
 
     async with aiohttp.ClientSession() as session:
@@ -206,9 +217,10 @@ async def mail_main(user_id="jadorethompsonz@gmail.com"):
             print("[PROCESS INDUSTRY]: ", companies)
 
             for company in companies:
-                await outreach_to_company(session, company, 4380, user_id)
+                await outreach_to_company(session, company, industry, 4380, user_id)
 
             await notify_tele_complete(session)
+
 
 if __name__ == '__main__':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
