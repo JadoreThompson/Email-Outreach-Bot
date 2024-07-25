@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Sign Up{% endblock %}
+
+
+{% block content %}
+<style>
+    .fullscreen-center {
+        min-height: 80vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .borderless {
+        border-color: none !important;
+    }
+
+    .login-card {
+        width: 100%;
+        max-width: 400px;
+        border: none;
+        margin: 0 auto;
+    }
+
+    .btn-outline-google {
+        border:  1px solid red;
+        background-color: white;
+        border-radius: 0.35em;
+    }
+
+    .btn-outline-google:hover {
+        background-color: red;
+        color: white;
+    }
+
+    @media (min-width: 650px) {
+        .login-card {
+            width: 50%;
+        }
+    }
+</style>
+<main role="main" class="fullscreen-center">
+    <div class="container text-center borderless">
+        <div class="card p-3 login-card">
+            <h3 class="card-title">Sign Up</h3>
+            <div class="card-body">
+                <form action="{{ url_for('views.signup_user') }}" method="post">
+                    <div class="row mb-4">
+                        <label for="name" class="text-start col-sm-4 col-form-label col-form-label-sm">Name</label>
+                        <br>
+                        <input type="text" class="form-control form-control-sm" id="name" name="name" placeholder="John">
+                    </div>
+                    <div class="row mb-4">
+                        <label for="email" class="text-start col-sm-4 col-form-label col-form-label-sm">Email</label>
+                        <br>
+                        <input type="email" class="form-control form-control-sm" id="email" name="password" placeholder="johndoe@example.com" required>
+                        {% if error and error.email %}
+                        <span>{{ error.email[0] }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="row mb-4">
+                        <label for="password" class="text-start col-sm-4 col-form-label col-form-label-sm">Password</label>
+                        <br>
+                        <input type="password" class="form-control form-control-sm" id="password" name="password" placeholder="*****" required>
+                    </div>
+                    <div class="row mb-4">
+                        <label for="confirmPassword" class="text-start col-sm-6 col-form-label col-form-label-sm">Confirm Password</label>
+                        <br>
+                        <input type="password" class="form-control form-control-sm" id="confirmPassword" name="confirm_password" placeholder="*****" required>
+                        {% if error and error.password %}
+                        <span>{{ error.password[0] }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="row mb-3">
+                        <input class="btn btn-outline-primary" type="submit" value="Submit">
+                    </div>
+                    <div class="row mb-3">
+                        <a href="{{ url_for('views.login_google') }}" class="btn btn-outline-google">
+                            <img src="/static/images/Logo-google-icon-PNG.png" alt="Google Logo" style="width: 1.5rem; margin-right: 0.5rem;">
+                            Sign in with Google
+                        </a>
+                    </div>
+<!--                    <div class="row mb-3 g-signin2" data-onsuccess="onSignIn">-->
+<!--                        <button class="btn-outline-google">-->
+<!--                            <img class="" src="/static/images/Logo-google-icon-PNG.png" alt="" style="width: 2rem;">-->
+<!--                        </button>-->
+<!--                    </div>-->
+                    <div class="row mb-3">
+                        {% if error_message %}
+                        <span style="color: red">{{ error_message }}</span>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!--<meta name="google-signin-client_id" content="84706046961-bh1h1atvjaim09r3qh1ta1c2v3tefk92.apps.googleusercontent.com">-->
+<!--<script src="https://apis.google.com/js/platform.js" async defer></script>-->
+
+<!--<script>-->
+<!--    function onSignIn(googleUser) {-->
+<!--      var profile = googleUser.getBasicProfile();-->
+<!--      console.log('ID: ' + profile.getId()); // Do not send to your backend! Use an ID token instead.-->
+<!--      console.log('Name: ' + profile.getName());-->
+<!--      console.log('Image URL: ' + profile.getImageUrl());-->
+<!--      console.log('Email: ' + profile.getEmail()); // This is null if the 'email' scope is not present.-->
+<!--    }-->
+<!--</script>-->
+{% endblock %}

@@ -1,0 +1,305 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<header>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container-fluid">
+            <div>
+                <img src="/static/images/Bold Modern Minimalist Gradient Technology Business Logo.png" style="width: 3rem;" alt="Logo">
+                <a href="/dashboard" class="navbar-brand">Outreach</a>
+            </div>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a href="/login" class="nav-link active" aria-current="page"></a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/signup" class="nav-link active" aria-current="page"></a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+</header>
+
+<style>
+    table {
+        font-size: 1.2rem;
+    }
+
+    @media (max-width: 500px) {
+        table {
+            font-size: 1rem;
+        }
+    }
+
+    .table {
+        margin-top: 1rem;
+    }
+
+    .phone-number {
+        width: 150px;
+        white-space: nowrap;
+    }
+
+    .table-wrapper {
+        overflow-x:auto;
+    }
+
+    .email-pair {
+        margin-top: 1rem;
+    }
+
+    th {
+        font-weight: 600;
+        white-space: nowrap;
+        margin-left: 1rem;
+    }
+</style>
+<main role="main">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center email-pair">
+            <button class="btn btn-primary" onclick="emailPair()">Add Email</button>
+            <div class="text-end">
+                <button class="btn btn-outline-secondary" onclick="startOutreach()">&#9654;</button>
+                <button class="btn btn-outline-secondary" onclick="stopOutreach()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pause" viewBox="0 0 16 16">
+                        <path d="M6 3.5a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-1 0V4a.5.5 0 0 1 .5-.5m4 0a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-1 0V4a.5.5 0 0 1 .5-.5"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Outreach data table -->
+    <div class="container shadow">
+        <div class="table-wrapper">
+            <table class="table" id="businessTable">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th scope="col">Business Name</th>
+                    <th scope="col">Website</th>
+                    <th scope="col">Email</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for email in sent_mail %}
+                <tr>
+                    <td>{{ email[2] }}</td>
+                    <td>{{ email[3] }}</td>
+                    <td>{{ email[0] }}</td>
+                </tr>
+                {% endfor %}
+                <tr>
+                    <td>1</td>
+                    <td>KFC</td>
+                    <td>https://kfc.com</td>
+                    <td>kfc@email.com</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mt-3">
+            <div id="rowCount"></div>
+            <nav aria-label="Table Navigation">
+                <ul class="pagination" id="pagination">
+                    <li class="page-item"><a href="#" id="prevPage">Previous</a></li>
+                    <li class="page-item"><a href="#" id="nextPage">Next</a></li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+</main>
+
+<!-- Pair email overlay -->
+<style>
+    .login-card {
+        width: 100%;
+        max-width: 400px;
+        border: none;
+        margin: 0 auto;
+    }
+
+    #emailPair {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        height: 100%;
+        width: 100%;
+        display: none;
+        z-index: 9999;
+        background-color: rgba(0,0,0,0.5);
+        align-items: center;
+        justify-content: center;
+        overflow: auto;
+        margin: 0;
+        padding: 0;
+    }
+
+    .close-larger {
+        font-size: 2rem;
+    }
+</style>
+<main role="main">
+    <div id="emailPair">
+        <div class="container text-center borderless">
+            <div class="card p-3 login-card">
+                <div class="card-title">
+                    <div class="col text-end">
+                        <button type="button" class="btn close close-larger" onclick="emailPair()" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="row">
+                        <h3 class="card-title">Add Email</h3>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('views.email_pair') }}" method="post">
+                        <div class="row mb-4">
+                            <label for="email" class="text-start col-sm-4 col-form-label col-form-label-sm">Email</label>
+                            <br>
+                            <input type="email" class="form-control form-control-sm" id="email" name="password" placeholder="johndoe@example.com" required>
+                        </div>
+                        <div class="row mb-4">
+                            <label for="password" class="text-start col-sm-4 col-form-label col-form-label-sm">Password</label>
+                            <br>
+                            <input type="password" class="form-control form-control-sm" id="password" name="password" placeholder="chickenandeggs123" required>
+                        </div>
+                        <div class="row mb-3">
+                            <label for="industries" class="text-start col-sm-4 col-form-label col-form-label-sm">Industries</label>
+                            <br>
+                            <input type="text" class="form-control form-control-sm" name="industries" id="industries" required>
+                        </div>
+                        <div class="row mb-3">
+                            <input class="btn btn-outline-primary" type="submit" value="Submit">
+                        </div>
+                        <div class="row mb-4 tags"></div>
+                        <small>Add up to 5 industries</small>
+                        <div class="row mb-4">
+                            <span><a href="https://www.youtube.com/watch?v=I9x0w8cjR_o&ab_channel=StudyGyaan" target="_blank">How to find your password?</a></span>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<style>
+    .nav .nav-item a {
+        font-size: 0.75rem;
+    }
+    ul li {
+        margin-right: 1rem;
+    }
+</style>
+<div class="b-example-divider"></div>
+<div class="b-example-divider"></div>
+<div class="b-example-divider"></div>
+<div class="container">
+    <footer class="row row-cols-1 row-cols-sm-2 row-cols-md-5 py-5 my-5 border-top">
+        <div class="col mb-3">
+            <a href="" class="d-flex align-items-center mb-3 link-body-emphasis text-decoration-none">
+                <svg class="bi me-2">
+                    <use xlink:href="#bootstrap"></use>
+                </svg>
+            </a>
+            <p class="text-body-secondary">© 2024</p>
+        </div>
+        <div class="col mb-3"></div> <!-- Space between columns -->
+        <div class="col mb-3">
+            <h5>About</h5>
+            <ul class="nav flex-column">
+                <li class="nav-item mb-2">
+                    <a href="#" class="nav-link p-0 text-body-secondary">How to find password?</a>
+                </li>
+                <li class="nav-item mb-2">
+                    <a href="#" class="nav-link p-0 text-body-secondary">How to get telegram notifications?</a>
+                </li>
+            </ul>
+        </div>
+    </footer>
+</div>
+
+<script>
+    function emailPair() {
+        var overlay = document.getElementById('emailPair');
+        if (overlay.style.display === 'none' || overlay.style.display === '') {
+            overlay.style.display = 'flex';
+        } else {
+            overlay.style.display = 'none';
+        }
+    }
+
+    const rowsPerPage = 50;
+    let currentPage = 1;
+    const table = document.getElementById('businessTable');
+    const tbody = table.querySelector('tbody');
+    const rows = tbody.querySelectorAll('tr');
+    const totalRows = rows.length;
+    const totalPages = Math.ceil(totalRows / rowsPerPage);
+
+    const prevPageBtn = document.getElementById('prevPage');
+    const nextPageBtn = document.getElementById('nextPage');
+    const rowCountDisplay = document.getElementById('rowCount');
+
+    function showPage(page) {
+        const start = (page - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
+        rows.forEach((row, index) => {
+            row.style.display = (index >= start && index < end) ? '' : 'none';
+        });
+        updateRowCount(start, end);
+        updatePaginationButtons();
+    }
+
+    function updateRowCount(start, end) {
+        const displayEnd = Math.min(end, totalRows);
+        rowCountDisplay.textContent = `${start + 1} - ${displayEnd} of ${totalRows}`;
+    }
+
+    function updatePaginationButtons() {
+        prevPageBtn.parentElement.classList.toggle('disabled', currentPage === 1);
+        nextPageBtn.parentElement.classList.toggle('disabled', currentPage === totalPages);
+    }
+
+    prevPageBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (currentPage > 1) {
+            currentPage--;
+            showPage(currentPage);
+        }
+    });
+
+    nextPageBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (currentPage < totalPages) {
+            currentPage++;
+            showPage(currentPage);
+        }
+    });
+
+    // Initial page load
+    showPage(currentPage);
+
+    function startOutreach() {
+        fetch('/start', {method: 'POST'})
+            .then(response => response.json())
+            .then(data => alert(data.message));
+    }
+
+    function stopOutreach() {
+        fetch('/stop', {method: 'POST'})
+            .then(response => response.json())
+            .then(data => alert(data.message));
+    }
+</script>
+{% endblock %}

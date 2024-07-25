@@ -1,9 +1,6 @@
+import datetime
 import os
 from dotenv import load_dotenv
-
-import requests
-import json
-
 import asyncio
 
 
@@ -16,14 +13,17 @@ chat_id = os.getenv('TELE_CHAT_ID')
 
 # Notify tele of no site and phone number
 async def notify_tele_phone_numbers(company, phone, session):
-    message = f"{company} has no website.\nHere's their phone number\n{phone}"
+    message = f"{datetime.date.today()}\n{company} has no website\nHere's their phone number\n{phone}"
     url = base_url + f"sendMessage?chat_id={chat_id}&text={message}"
 
-    async with await session.get(url) as rsp:
-        if rsp.status == 200:
-            outcome = await rsp.json()
-            if outcome["ok"]:
-                return True
+    try:
+        async with await session.get(url) as rsp:
+            if rsp.status == 200:
+                outcome = await rsp.json()
+                if outcome["ok"]:
+                    return True
+    except Exception as e:
+        print(f"NOTIFY TELE NUMBERS]: {str(e)}")
 
         return False
 
@@ -31,7 +31,7 @@ async def notify_tele_phone_numbers(company, phone, session):
 # Notify tele of scrape completion
 async def notify_tele_complete(session):
     message = "Scraping complete"
-    gif_url = "https://gifdb.com/images/high/spongebob-squarepants-done-and-done-2de4g1978uus7pp6.gif"
+    gif_url = os.getcwd() + "\static\images\spongebob-squarepants-done-and-done-2de4g1978uus7pp6.gif"
     url = base_url + f"sendAnimation?chat_id={chat_id}&caption={message}&animation={gif_url}"
 
     async with await session.get(url) as rsp:

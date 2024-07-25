@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<style>
+    h2 {
+        font-size: 1rem;
+    }
+
+    .noti-card {
+        justify-content: center;
+        align-items: center;
+    }
+
+    .noti-btn {
+        width: 100%;
+    }
+
+    .row {
+        width: 100%;
+    }
+</style>
+<main role="main" class="fullscreen-center">
+    <div class="container text-center borderless">
+        <div class="card p-3 login-card noti-card">
+            <div class="card-title">
+                <img src="/static/images/c7f3b7729e58e45def.png" alt="Logo" style="width: 25rem;">
+            </div>
+            <div class="card-body">
+                <h2>To get your notifications <a href="https://t.me/https://t.me/nexifysolutions_bot">click here</a></h2>
+            </div>
+            <div class="row">
+                <button type="button" class="btn btn-outline-primary  noti-btn">Next</button>
+            </div>
+        </div>
+    </div>
+</main>
+{% endblock%}
