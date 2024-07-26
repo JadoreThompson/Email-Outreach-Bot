@@ -241,7 +241,10 @@ async def mail_main(user_id="quantissol@gmail.com"):
         phone_leads = await get_phone_numbers(retry_client, industries)
         for lead in phone_leads:
             lead['session'] = session
-            await asyncio.create_task(notify_tele_phone_numbers(**lead))
+            task = asyncio.create_task(notify_tele_phone_numbers(**lead))
+            print("[CANCELLING TASK]")
+            task.cancel()
+            print("[CANCELLED TASK]")
             print(f"[PHONE NUMBERS]: Successfully sent notification for {lead['company']}")
             await asyncio.sleep(5)
 

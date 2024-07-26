@@ -55,7 +55,8 @@ def login_required(f):
 
 
 # Running the mail script
-scheduler = APScheduler(BackgroundScheduler())
+scheduler = APScheduler()
+
 
 
 def run_outreach(user_id):
@@ -220,7 +221,6 @@ def logout_user():
 @views.route('/dashboard')
 @login_required
 def dashboard():
-    print("[DASHBOARD: SESS STATE]: ", session['state'])
     with psycopg2.connect(**conn_params) as conn:
         with conn.cursor() as cur:
             db_query = sql.SQL("""
@@ -229,7 +229,7 @@ def dashboard():
             """)
             cur.execute(db_query, (session['user_id'], ))
             sent_mail = cur.fetchall()
-            print("[DASHBOARD]: ", sent_mail)
+            print("[DASHBOARD]: SENT MAIL, ", sent_mail)
 
     # TODO: Make the add email button functional, take their email and password store in DB and use that for the script when they decide the press play
 
@@ -247,25 +247,33 @@ def email_pair():
 def start_outreach():
     print("[START OUTREACH]: ", session['user_id'])
     global running
+    global task
+
     if not running:
-        scheduler.add_job(id='continuous_outreach', func=run_outreach(session['user_id']))
+        task = asyncio.create_task(run_outreach(session['user_id']))
+
         # TODO: create a little green blip showing running
+        running = True
         return jsonify({'message': 'running'})
     else:
         # TODO: process already running
         return jsonify({'message': 'already running'})
 
 
-@views.route('/stop')
+@views.route('/stop', methods=['POST'])
 @login_required
 def stop_outreach():
     global running
+    global task
+
     if running:
-        running = False
-        scheduler.remove_job('continuous_outreach')
+        task.cancel()
         # TODO: return the new blip with red showing not running
+
     else:
         return jsonify({'message': 'No process is currently running'})
+
+    running = False
 
 
 @views.route('/notis')

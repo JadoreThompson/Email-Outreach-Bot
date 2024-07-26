@@ -65,8 +65,10 @@
 <main role="main">
     <div class="container">
         <div class="d-flex justify-content-between align-items-center email-pair">
-            <button class="btn btn-primary" onclick="emailPair()">Add Email</button>
-<!--            <input type="text" id="searchInput" class="form-control" placeholder="Search...">-->
+            <div class="container text-start">
+                <button class="btn btn-primary" onclick="emailPair()">Add Email</button>
+                <input  onkeyup="queryTable()" type="text" id="searchInput" class="form-control" placeholder="Search...">
+            </div>
             <div class="text-end">
                 <button class="btn btn-outline-secondary" onclick="startOutreach()">&#9654;</button>
                 <button class="btn btn-outline-secondary" onclick="stopOutreach()">
@@ -82,7 +84,7 @@
     <!-- Outreach data table -->
     <div class="container shadow">
         <div class="table-wrapper">
-            <table class="table" id="businessTable">
+            <table class="table" id="myTable">
                 <thead>
                 <tr>
                     <th scope="col">Business Name</th>
@@ -94,21 +96,14 @@
                 {% for email in sent_mail %}
                     <tr>
                         <td>{{ email[2] }}</td>
-                        <td>{{ email[3] }}</td>
-                        <td>{{ email[0] }}</td>
+                        <td>
+                            <a href="{{ email[3] }}" target="_blank">{{ email[3] }}</a>
+                        </td>
+                        <td>
+                            <a href="{{ email[0] }}" target="_blank">{{ email[0] }}</a>
+                        </td>
                     </tr>
                 {% endfor %}
-                <tr>
-                    <td>1</td>
-                    <td>KFC</td>
-                    <td>https://kfc.com</td>
-                    <td>kfc@email.com</td>
-                </tr>
-                <tr>
-                    <td>1</td>
-                    <td>asdasd</td>
-                    <td>asdasd</td>
-                </tr>
                 </tbody>
             </table>
         </div>
@@ -236,76 +231,81 @@
 </div>
 
 <script>
-    function emailPair() {
-        var overlay = document.getElementById('emailPair');
-        if (overlay.style.display === 'none' || overlay.style.display === '') {
-            overlay.style.display = 'flex';
-        } else {
-            overlay.style.display = 'none';
-        }
-    }
-
+    let filteredRows = [];
     const rowsPerPage = 50;
     let currentPage = 1;
-    const table = document.getElementById('businessTable');
+    const table = document.getElementById('myTable');
     const tbody = table.querySelector('tbody');
-    const rows = tbody.querySelectorAll('tr');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
     const totalRows = rows.length;
-    const totalPages = Math.ceil(totalRows / rowsPerPage);
 
     const prevPageBtn = document.getElementById('prevPage');
     const nextPageBtn = document.getElementById('nextPage');
     const rowCountDisplay = document.getElementById('rowCount');
 
-    function showPage(page) {
-        const start = (page - 1) * rowsPerPage;
-        const end = start + rowsPerPage;
-        rows.forEach((row, index) => {
-            row.style.display = (index >= start && index < end) ? '' : 'none';
+    function displayTable() {
+        const startIndex = (currentPage - 1) * rowsPerPage;
+        const endIndex = startIndex + rowsPerPage;
+        const displayedRows = filteredRows.slice(startIndex, endIndex);
+
+        tbody.innerHTML = '';
+        displayedRows.forEach(row => tbody.appendChild(row));
+
+        updatePaginationControls();
+        updateRowCount();
+    }
+
+    function updatePaginationControls() {
+        const totalPages = Math.ceil(filteredRows.length / rowsPerPage);
+        prevPageBtn.classList.toggle('disabled', currentPage === 1);
+        nextPageBtn.classList.toggle('disabled', currentPage === totalPages);
+    }
+
+    function updateRowCount() {
+        const startIndex = (currentPage - 1) * rowsPerPage + 1;
+        const endIndex = Math.min(currentPage * rowsPerPage, filteredRows.length);
+        rowCountDisplay.textContent = `Showing ${startIndex} to ${endIndex} of ${filteredRows.length} entries`;
+    }
+
+    function queryTable() {
+        const input = document.getElementById("searchInput");
+        const filter = input.value.toUpperCase();
+
+        filteredRows = rows.filter(row => {
+            const td = row.getElementsByTagName("td")[0];
+            if (td) {
+                const txtValue = td.textContent || td.innerText;
+                return txtValue.toUpperCase().indexOf(filter) > -1;
+            }
+            return false;
         });
-        updateRowCount(start, end);
-        updatePaginationButtons();
-    }
 
-    function updateRowCount(start, end) {
-        const displayEnd = Math.min(end, totalRows);
-        rowCountDisplay.textContent = `${start + 1} - ${displayEnd} of ${totalRows}`;
-    }
-
-    function updatePaginationButtons() {
-        prevPageBtn.parentElement.classList.toggle('disabled', currentPage === 1);
-        nextPageBtn.parentElement.classList.toggle('disabled', currentPage === totalPages);
+        currentPage = 1;
+        displayTable();
     }
 
     prevPageBtn.addEventListener('click', (e) => {
         e.preventDefault();
         if (currentPage > 1) {
             currentPage--;
-            showPage(currentPage);
+            displayTable();
         }
     });
 
     nextPageBtn.addEventListener('click', (e) => {
         e.preventDefault();
+        const totalPages = Math.ceil(filteredRows.length / rowsPerPage);
         if (currentPage < totalPages) {
             currentPage++;
-            showPage(currentPage);
+            displayTable();
         }
     });
 
-    // Initial page load
-<!--    showPage(currentPage);-->
+    // Initial setup
+    filteredRows = rows;
+    displayTable();
 
-    function startOutreach() {
-        fetch('/start', {method: 'POST'})
-            .then(response => response.json())
-            .then(data => alert(data.message));
-    }
-
-    function stopOutreach() {
-        fetch('/stop', {method: 'POST'})
-            .then(response => response.json())
-            .then(data => alert(data.message));
-    }
+    // Add event listener to search input
+    document.getElementById("searchInput").addEventListener('input', queryTable);
 </script>
 {% endblock %}
